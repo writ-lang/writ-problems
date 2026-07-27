@@ -1,5 +1,9 @@
 # Solving problems with `pol`
 
+*Worked models for [pol](https://github.com/sajonaro/pol). The language, the
+checker and the CLI live there; this repository is the problems and their
+answers.*
+
 A sequence of end-to-end tests that **use the `pol` tooling to solve real
 problems** and check the answers. Each problem is written as a Pol model
 (`.pol`) with its questions kept next door (`.claims`), exactly as the spec
@@ -217,32 +221,45 @@ this one gracefully if `git` is absent.)
 
 ## Run it
 
-### With Docker (reproducible — builds `pol` from source)
-```sh
-docker compose build          # compile pol in a container, once
-docker compose up             # run every puzzle; each service exits 0 iff its checks pass
-docker compose run --rm river # just one
-```
-The image installs `pol` at `/usr/local/bin/pol` with the stdlib bundled at
-`/usr/local/share/pol/lib`, so `(load "stdlib.pol")` resolves anywhere.
+This repository contains **no engine**. Install
+[pol](https://github.com/sajonaro/pol) first — the runner needs `pol` on your
+`PATH`, and the models need the standard library the install puts alongside it:
 
-### Locally (needs `pol` on PATH — `make install` from the repo root)
 ```sh
-./examples/run-tests.sh            # all puzzles
-./examples/run-tests.sh river      # just the river
-POL=/path/to/pol ./examples/run-tests.sh
+opam install pol         # or: make install-pol, from a pol checkout
+pol --version
 ```
+
+Then:
+
+```sh
+./run-tests.sh                  # every scenario
+./run-tests.sh river            # just one
+POL=/path/to/pol ./run-tests.sh # a pol that is not on PATH
+```
+
+`(load "stdlib.pol")` resolves with nothing configured: the installed layout
+puts the standard library at `<prefix>/share/pol/lib`, which is where the
+resolver looks (design D3). `POL_TRACE_LOADS=1` prints what each load actually
+resolved to, if a model ever surprises you.
+
+*No Docker here yet.* The image these scenarios used to run in built `pol` from
+source in the same repository, which is no longer this one. A Dockerfile here
+wants a published `pol` artifact to install rather than a source tree to
+compile, and that does not exist yet.
 
 ## Adding a puzzle
-1. Create `examples/<name>/<name>.pol` (the model) and `<name>.claims` (the
-   questions). A `pol compare` scenario also ships a second `.pol` (see
-   `oversight/oversight-repeal.pol`).
+1. Create `<name>/<name>.pol` (the model) and `<name>.claims` (the questions).
+   A `pol compare` scenario also ships a second `.pol` (see
+   `oversight/oversight-repeal.pol`). Shared vocabulary goes in
+   [`libraries/`](libraries/README.md) as a domain library.
 2. Add a `<name>()` function to `run-tests.sh` — run `pol check` (and
    `pol compare` if the scenario needs it, on absolute paths under `$here`) and
    assert the answers with `has …` / `near …` / `lacks …` / `exit_is …` — plus a
    case in the dispatch and the `all` runner at the bottom.
-3. Add a service to `docker-compose.yml` (copy the `river` block, change the
-   name + `command`).
+3. If the scenario re-asks its questions of the rules engine, add a `.rules`
+   file too — `modality-cross-check.sh` then compares the two answers, and a
+   disagreement is a bug in one of them.
 
 ## Notes on the solution path
 - **A holding `possible` now prints its witness — the solution.** `possible F`
