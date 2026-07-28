@@ -1,0 +1,7 @@
+# The build context is the problems themselves. Keep git metadata and any local
+# scratch out of it, so an image rebuild is driven by the models changing and
+# not by a branch switch.
+.git
+.gitignore
+Dockerfile
+docker-compose.yml

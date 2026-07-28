@@ -243,10 +243,32 @@ puts the standard library at `<prefix>/share/pol/lib`, which is where the
 resolver looks (design D3). `POL_TRACE_LOADS=1` prints what each load actually
 resolved to, if a model ever surprises you.
 
-*No Docker here yet.* The image these scenarios used to run in built `pol` from
-source in the same repository, which is no longer this one. A Dockerfile here
-wants a published `pol` artifact to install rather than a source tree to
-compile, and that does not exist yet.
+### With Docker — nothing installed on the host
+
+Everything above needs `pol` on your machine. If you would rather install
+nothing, the scenarios run in a container built **from the image the pol
+repository produces**:
+
+```sh
+cd ../pol && make image        # tags pol:latest — once, and only when pol changes
+cd -                           # back here
+docker compose up              # every scenario; exits non-zero if any check fails
+docker compose run --rm river  # just one
+```
+
+That image carries `pol`, the standard library where the resolver looks, and
+`git` — which `pol compare --git` shells out to, so the `gitcompare` scenario
+needs it at runtime rather than as a build tool.
+
+The base image is named by a build ARG, so the day pol publishes one, this
+repository needs no change:
+
+```sh
+docker compose build --build-arg POL_IMAGE=ghcr.io/sajonaro/pol:0.1.0
+```
+
+Until then, building it yourself is the one step that still wants a pol
+checkout. Nothing else here does.
 
 ## Adding a puzzle
 1. Create `<name>/<name>.pol` (the model) and `<name>.claims` (the questions).

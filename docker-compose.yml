@@ -1,0 +1,78 @@
+# Every scenario as a service, over the image the pol repository builds.
+#
+#   in a pol checkout:   make image          # tags pol:latest, once
+#   here:                docker compose up   # every scenario
+#                        docker compose run --rm river
+#
+# A service exits 0 iff every assertion for its scenario passed, so `up` is a
+# pass/fail run of the whole suite and needs nothing on the host but Docker.
+#
+# Point at a published engine image instead when there is one:
+#   docker compose build --build-arg POL_IMAGE=ghcr.io/sajonaro/pol:0.1.0
+
+services:
+  # The Prologue river crossing: a solution path, and the blunder `live` finds.
+  river:
+    build: .
+    image: pol-problems
+    command: ["river"]
+
+  # Knights & knaves — the reading that makes the story consistent.
+  island:
+    build: .
+    image: pol-problems
+    command: ["island"]
+
+  # Eight queens in fifteen lines over a domain library; all 92 boards.
+  queens:
+    build: .
+    image: pol-problems
+    command: ["queens"]
+
+  # A blocking job shop: CAN every job finish? Finds the three-way deadlock.
+  jobshop-possible:
+    build: .
+    image: pol-problems
+    command: ["jobshop_possible"]
+
+  # The same shop with a clock: WHICH schedule is shortest? Optimum pinned from both sides.
+  jobshop-best:
+    build: .
+    image: pol-problems
+    command: ["jobshop_best"]
+
+  # Institutional architecture — laws, acknowledgments, and `pol compare` across an amendment.
+  oversight:
+    build: .
+    image: pol-problems
+    command: ["oversight"]
+
+  # A regulated workflow: a declared `gap` where the rules stop.
+  workflow:
+    build: .
+    image: pol-problems
+    command: ["workflow"]
+
+  # Access and privilege, including a one-way latch.
+  access:
+    build: .
+    image: pol-problems
+    command: ["access"]
+
+  # `pol control` — a model's dynamics emitted as data, then re-checked.
+  control:
+    build: .
+    image: pol-problems
+    command: ["control"]
+
+  # `pol compare --git` over a throwaway two-commit history.
+  gitcompare:
+    build: .
+    image: pol-problems
+    command: ["gitcompare"]
+
+  # Both instruments over all sixteen properties: `pol check` against `pol derive`.
+  crosscheck:
+    build: .
+    image: pol-problems
+    command: ["crosscheck"]
