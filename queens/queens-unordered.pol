@@ -27,7 +27,7 @@
 ; are what makes a route readable: `p11, p23, p35, …` IS the board, left to
 ; right.
 (form (column Q N1 N2 N3 N4 N5 N6 N7 N8)
-  => (transition N1 (when (and (not (defined Q.at)) (free p Q.sq1))) (do (set Q.at Q.sq1)))
+  (transition N1 (when (and (not (defined Q.at)) (free p Q.sq1))) (do (set Q.at Q.sq1)))
      (transition N2 (when (and (not (defined Q.at)) (free p Q.sq2))) (do (set Q.at Q.sq2)))
      (transition N3 (when (and (not (defined Q.at)) (free p Q.sq3))) (do (set Q.at Q.sq3)))
      (transition N4 (when (and (not (defined Q.at)) (free p Q.sq4))) (do (set Q.at Q.sq4)))

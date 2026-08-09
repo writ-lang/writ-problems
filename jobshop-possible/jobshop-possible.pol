@@ -23,14 +23,14 @@
 
 ; A job takes its first machine.
 (form (enters J N)
-  => (transition N
+  (transition N
        (when (and (at-stage J queued) (idle J.first)))
        (do (set J.first.held-by J) (set J.stage on-first))))
 
 ; …then its second, WITHOUT letting go of the first until it has it. That is
 ; the blocking rule, and `hand-over` is where it is written down.
 (form (advances J N)
-  => (transition N
+  (transition N
        (when (and (at-stage J on-first) (idle J.second)))
        (hand-over J J.first J.second (set J.stage on-second))))
 
@@ -38,11 +38,11 @@
 ; job that never released its last machine would block the shop for a reason
 ; that has nothing to do with scheduling.
 (form (leaves J N)
-  => (transition N
+  (transition N
        (when (at-stage J on-second))
        (do (vacate J.second.held-by) (set J.stage done))))
 
-(form (job-of J E A L) => (enters J E) (advances J A) (leaves J L))
+(form (job-of J E A L) (enters J E) (advances J A) (leaves J L))
 
 (job-of a a-enters a-advances a-leaves)
 (job-of b b-enters b-advances b-leaves)

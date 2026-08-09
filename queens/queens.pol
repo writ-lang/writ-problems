@@ -24,7 +24,7 @@
 (initial empty)
 
 (form (fill N S)
-  => (transition N
+  (transition N
        (when (and (not (defined cur.q.at)) (free p S)))
        (do (set cur.q.at S) (set cur.q cur.q.next))))
 

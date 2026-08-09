@@ -26,21 +26,21 @@
 
 ; The same three moves as the untimed shop, each now costing the job its turn.
 (form (enters J N)
-  => (transition N
+  (transition N
        (when (and (at-stage J queued) (may-move J) (idle J.first)))
        (do (set J.first.held-by J) (set J.stage on-first) (took-turn J))))
 
 (form (advances J N)
-  => (transition N
+  (transition N
        (when (and (at-stage J on-first) (may-move J) (idle J.second)))
        (hand-over J J.first J.second (set J.stage on-second) (took-turn J))))
 
 (form (leaves J N)
-  => (transition N
+  (transition N
        (when (and (at-stage J on-second) (may-move J)))
        (do (vacate J.second.held-by) (set J.stage done) (took-turn J))))
 
-(form (job-of J E A L) => (enters J E) (advances J A) (leaves J L))
+(form (job-of J E A L) (enters J E) (advances J A) (leaves J L))
 
 (job-of a a-enters a-advances a-leaves)
 (job-of b b-enters b-advances b-leaves)

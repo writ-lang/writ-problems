@@ -69,7 +69,7 @@
 ; `at` is vacant, so `B.at.row` has no answer, `is` is strict, and `differ` is
 ; therefore true.
 (form (free B S)
-  => (all (B queen)
+  (all (B queen)
        (and (differ B.at.row S.row) (differ B.at.da S.da) (differ B.at.db S.db))))
 
 ; The empty board. Sixty-four squares, eight queens, nothing placed.

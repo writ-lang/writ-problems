@@ -57,7 +57,7 @@
 ; Does component C meet what stage K demands? A demand of `no` is satisfied by
 ; anything; a demand of `yes` needs the part to claim the matching attribute.
 (form (fits C K)
-  => (and (or (is K.needs-bulk  no) (is C.bulk yes))
+  (and (or (is K.needs-bulk  no) (is C.bulk yes))
           (or (is K.needs-scan  no) (is C.scans yes))
           (or (is K.needs-rerun no) (is C.rerunnable yes))
           (or (is K.needs-loose no) (not (is C.couples tight)))))
@@ -74,13 +74,13 @@
 ; over a roster, and the kernel has `all` (stdlib, from `some`) where stratified
 ; Datalog cannot state one positively.
 (form (deps-met C R)
-  => (all (R req) (or (not (is R.r-comp C)) (defined R.r-cap.chosen))))
+  (all (R req) (or (not (is R.r-comp C)) (defined R.r-cap.chosen))))
 
 ; One move per (component, stage) pair it could fill. The cursor advances, so
 ; the ladder's end leaves `set cur.at` with no answer and the move is ABSENT —
 ; a finished architecture is a dead end, needing no guard to say so.
 (form (pick NAME C K R)
-  => (transition NAME
+  (transition NAME
        (when (and (is cur.at K)
                   (not (defined K.chosen))
                   (fits C K)

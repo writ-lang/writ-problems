@@ -44,13 +44,13 @@
 
 ; ── the shop, said in its own words ──────────────────────────────────────────
 
-(form (idle M)       => (not (defined M.held-by)))
-(form (at-stage J S) => (is J.stage S))
+(form (idle M)       (not (defined M.held-by)))
+(form (at-stage J S) (is J.stage S))
 
 ; Every job finished. B names the binder, because a form template's list head
 ; must be a slot. Used by the models AND by both .claims files — a question is
 ; a document of its own (wish 12), but it may share a vocabulary.
-(form (all-done B)   => (all (B job) (is B.stage done)))
+(form (all-done B)   (all (B job) (is B.stage done)))
 
 ; ── the BLOCKING discipline, which is the whole subject ──────────────────────
 ;
@@ -64,7 +64,7 @@
 ; being written twice — the effect list is one datum, which is what lets a form
 ; produce it (§10.2: splicing inside a list is only `@SLOT` on a `&rest`).
 (form (hand-over J FROM TO &rest E)
-  => (do (set TO.held-by J) (vacate FROM.held-by) @E))
+  (do (set TO.held-by J) (vacate FROM.held-by) @E))
 
 ; ── the TURN discipline: a job acts at most once per tick ────────────────────
 ;
@@ -72,14 +72,14 @@
 ; the rule rather than an ad-hoc flag. A shop with no clock simply never uses
 ; them, and pays nothing for that: a cell that is never written is the same
 ; cell in every situation.
-(form (may-move J)  => (is J.moved no))
-(form (took-turn J) => (set J.moved yes))
+(form (may-move J)  (is J.moved no))
+(form (took-turn J) (set J.moved yes))
 
 ; The clock advances and every job's turn comes back. `@R` is the resets,
 ; because the library cannot know which jobs a shop has — and the moment `set`
 ; took a chain (§10.3), this stopped needing one transition per tick.
 (form (tick-over N C &rest R)
-  => (transition N (when (is C.at C.at)) (do (set C.at C.at.next) @R)))
+  (transition N (when (is C.at C.at)) (do (set C.at C.at.next) @R)))
 
 ; ── the shop floor ───────────────────────────────────────────────────────────
 ;

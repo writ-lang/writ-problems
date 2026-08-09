@@ -35,7 +35,7 @@
 ; SAFE: no predator is stranded with its prey — i.e. no danger pair shares a
 ; bank the farmer has left. (A vacant/eaten piece is `at` nowhere, so it drops
 ; out of these tests.)
-(form safe =>
+(form safe 
   (not (or (and (is wolf.at left)  (is goat.at left)     (is farmer.at right))
            (and (is wolf.at right) (is goat.at right)    (is farmer.at left))
            (and (is goat.at left)  (is cabbage.at left)  (is farmer.at right))
@@ -44,10 +44,10 @@
 ; compound moves, named once — Wish 11. The farmer may only move from a safe
 ; arrangement; strand prey and he is frozen until appetite has acted.
 (form (row NAME FROM TO)
-  => (transition NAME (when (and safe (is farmer.at FROM))) (do (set farmer.at TO))))
+  (transition NAME (when (and safe (is farmer.at FROM))) (do (set farmer.at TO))))
 
 (form (ferry NAME C FROM TO)
-  => (transition NAME
+  (transition NAME
        (when (and safe (is farmer.at FROM) (is C.at FROM)))
        (do (set farmer.at TO) (set C.at TO))))
 
@@ -59,7 +59,7 @@
 ; nature's move: on a bank the farmer has left, appetite acts. From an unsafe
 ; arrangement this is the ONLY enabled move (the farmer is frozen), so it fires.
 (form (eats NAME P Q BANK OTHER)
-  => (transition NAME
+  (transition NAME
        (when (and (is P.at BANK) (is Q.at BANK) (is farmer.at OTHER)))
        (do (vacate Q.at))))            ; the eaten piece is gone
 

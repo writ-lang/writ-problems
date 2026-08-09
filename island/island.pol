@@ -27,7 +27,7 @@
 ; the island's law, applied as moves:
 ; "I am a knight" is consistent with either kind — two readings, two moves
 (form (read-knight-sayer AS-KNIGHT AS-KNAVE N)
-  => (transition AS-KNIGHT
+  (transition AS-KNIGHT
        (when (and (is N.claims said-knight) (not (defined N.kind))))
        (do (set N.kind knight)))
      (transition AS-KNAVE
@@ -36,7 +36,7 @@
 
 ; "I am a knave" is consistent with neither — the rules are silent
 (form (read-knave-sayer NAME N)
-  => (transition NAME
+  (transition NAME
        (when (and (is N.claims said-knave) (not (defined N.kind))))
        (do (gap "no consistent kind exists for this speaker: the island's rules are silent"))))
 
