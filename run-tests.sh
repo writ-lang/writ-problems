@@ -26,13 +26,13 @@ bad() {
   printf '  [FAIL] %s\n' "$1"
 }
 has() { # label  haystack  needle
-  if printf '%s\n' "$2" | grep -qF "$3"; then ok "$1"; else bad "$1 — missing: $3"; fi
+  if printf '%s\n' "$2" | grep -qF -- "$3"; then ok "$1"; else bad "$1 — missing: $3"; fi
 }
 near() { # label  haystack  anchor  needle  (needle within 6 lines after anchor)
-  if printf '%s\n' "$2" | grep -A6 -F "$3" | grep -qF "$4"; then ok "$1"; else bad "$1 — '$4' not shown under '$3'"; fi
+  if printf '%s\n' "$2" | grep -A6 -F -- "$3" | grep -qF -- "$4"; then ok "$1"; else bad "$1 — '$4' not shown under '$3'"; fi
 }
 lacks() { # label  haystack  needle  (assert the needle is ABSENT)
-  if printf '%s\n' "$2" | grep -qF "$3"; then bad "$1 — unexpected: $3"; else ok "$1"; fi
+  if printf '%s\n' "$2" | grep -qF -- "$3"; then bad "$1 — unexpected: $3"; else ok "$1"; fi
 }
 exit_is() { # label  actual  expected
   if [ "$2" = "$3" ]; then ok "$1 (exit $3)"; else bad "$1 — exit $2, want $3"; fi
@@ -245,7 +245,7 @@ control() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "control: emits cleanly" "$st" 0
-  has "control: it is an instance of the stdlib quiver schema" "$out" "(of quiver)"
+  has "control: it is an instance of the stdlib quiver schema" "$out" "-control quiver"
   has "control: an edge per transition — capture-watchdog" "$out" "capture-watchdog"
   has "control:    ... and assign-judge" "$out" "assign-judge"
   # Prove the emitted quiver is real data: wrap it as a model and re-check it.
