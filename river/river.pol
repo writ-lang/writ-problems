@@ -23,10 +23,11 @@
   (type cargo
     (arrow at (to bank) vacatable)))     ; eaten: nowhere — Wish 2
 
-(instance start (of river)
-  (traveler farmer)
-  (cargo wolf goat cabbage)
-  (at (farmer left) (wolf left) (goat left) (cabbage left)))
+(instance start river
+  (traveler farmer (at left))
+  (cargo wolf (at left))
+  (cargo goat (at left))
+  (cargo cabbage (at left)))
 
 (use river)
 (initial start)

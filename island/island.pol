@@ -13,10 +13,13 @@
     (arrow claims (to claim-t) fixed)      ; the recorded utterance
     (arrow kind   (to kind-t) vacatable))) ; unclassified until read
 
-(instance census (of island)
-  (native abe bea cal)
-  (claims (abe said-knight) (bea said-knight) (cal said-knave))
-  (kind   (abe vacant) (bea vacant) (cal vacant)))
+(instance census island
+  (native abe (claims said-knight)
+              (kind vacant))
+  (native bea (claims said-knight)
+              (kind vacant))
+  (native cal (claims said-knave)
+              (kind vacant)))
 
 (use island)
 (initial census)

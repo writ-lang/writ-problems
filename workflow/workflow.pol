@@ -25,14 +25,14 @@
   (equation officer-in-unit
     (= case.officer.unit case.unit)))
 
-(instance intake (of workflow)
-  (agent ann bob)
-  (case claim-1)
-  (unit     (ann kyc) (bob fraud) (claim-1 kyc))
-  (reviewer (claim-1 ann))
-  (officer  (claim-1 ann))
-  (stage    (claim-1 screening))
-  (assignee (claim-1 vacant)))
+(instance intake workflow
+  (agent ann (unit kyc))
+  (agent bob (unit fraud))
+  (case claim-1 (unit kyc)
+                (reviewer ann)
+                (officer ann)
+                (stage screening)
+                (assignee vacant)))
 
 (use workflow)
 (initial intake)

@@ -24,11 +24,16 @@
   (equation traces-to-root
     (= account.sponsor.source account.source)))
 
-(instance baseline (of access)
-  (account root alice mallory)
-  (role    (root user) (alice user) (mallory user))
-  (sponsor (root root) (alice root) (mallory mallory))
-  (source  (root root) (alice root) (mallory external)))
+(instance baseline access
+  (account root (role user)
+                (sponsor root)
+                (source root))
+  (account alice (role user)
+                 (sponsor root)
+                 (source root))
+  (account mallory (role user)
+                   (sponsor mallory)
+                   (source external)))
 
 (use access)
 (initial baseline)
