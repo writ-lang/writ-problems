@@ -1,0 +1,63 @@
+; The questions about the allocation of one scarce input (§16). They sit beside
+; `market.pol` because a claims file is read as a model's sibling by `pol query`
+; and `pol compare` — but they are not *about* it. They are put to `planned.pol`
+; unchanged, by name:
+;
+;     pol check planned.pol --claims market.claims
+;
+; which is the whole reason questions live apart from models. The two models
+; share a library, a schema, an instance, a move set and every transition name;
+; they differ in one guard. So this file is the experiment: the questions are
+; held fixed, and the verdicts are what move.
+
+; 1. CAN it come out right? Neither arrangement is incapable — this is not a
+; question about competence. It holds in both, and `pol` prints the route.
+(property need-can-be-met
+  "the steel can end up built at a plant that needed it"
+  (possible (and (is steel.state built) (is steel.at.need high))))
+
+; 2. Can it come out WRONG? `never` asks whether any reachable situation has the
+; steel built at a plant with no need of it. Under a costless request, one can:
+; the monument asks, the allocator has nothing to weigh the request against, and
+; the steel is spent. Under a backed bid the same three moves are written down
+; and the first of them never becomes available.
+(property no-waste
+  "the steel is never built at a plant that does not need it"
+  (never (and (is steel.state built) (is steel.at.need low))))
+
+; 3. And after it has come out wrong, can it be put right? `live` asks whether a
+; good outcome is still reachable from EVERY reachable situation. This is the
+; one that matters, and the one the tool exists for: 2 says a bad outcome is
+; permitted, 3 says it is terminal. Steel welded into a monument is not a delay
+; to be corrected by a better plan next quarter; there is no next quarter for
+; that steel.
+(property need-always-still-meetable
+  "from every situation the rules allow, the steel can still be built where it is needed"
+  (live (and (is steel.state built) (is steel.at.need high))))
+
+; THE LAW, and who can break it. `signal-honest` (in the library) demands that
+; the plant holding the steel be one whose request matches its situation. Every
+; move that writes `ask` or `at` can break it — nine of the twelve — and both
+; models are handed the same ledger, because both models have the same nine
+; moves under the same names. Acknowledging a move is not conceding that it does
+; break the law: `can be broken by` is about what a move WRITES. Which model
+; actually reaches a violation is the finding, and it is not the same answer
+; twice.
+(accept ask-clinic-high   signal-honest)
+(accept ask-clinic-low    signal-honest)
+(accept ask-tractor-high  signal-honest)
+(accept ask-tractor-low   signal-honest)
+(accept ask-monument-high signal-honest)
+(accept ask-monument-low  signal-honest)
+(accept allocate-clinic   signal-honest)
+(accept allocate-tractor  signal-honest)
+(accept allocate-monument signal-honest)
+
+; Which plants actually need the steel? (§16.2) The answer is the same in both
+; models, at state 0 and at every other, because `need` is wiring. The fact is
+; in the world, sitting in the model, printable on demand — and in `planned.pol`
+; there is no move whose guard can read it. That is the whole difficulty in one
+; line of output: the problem is never that the information does not exist.
+(query who-needs-it
+  (where (p plant))
+  (is p.need high))

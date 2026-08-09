@@ -1,0 +1,89 @@
+; economy.lib.pol — a DOMAIN library: one scarce allotment, several plants that
+; could use it, and an allocator that reads a signal.
+;
+; The sibling of scheduling.lib.pol beside it, and the same split: a library
+; says what EXISTS, a model says what may HAPPEN. `calculation/planned.pol` and
+; `calculation/market.pol` both load this file and then differ in ONE guard —
+; the guard on the move that produces the signal the allocator reads. Everything
+; else — the plants, their true needs, the allocation rule, the irreversible
+; commitment — is here, identical for both, so the comparison has exactly one
+; free variable.
+;
+; WHERE IT LIVES. Beside the other domain libraries in `libraries/`, loaded by
+; relative path: `(load "../libraries/economy.lib.pol")`.
+;
+; It pays the namespace, as any library does (§7): every model loading it gives
+; up `level`, `plant`, `allotment`, `need`, `ask`, `low`, `high` and the entity
+; names. That cost is why this is a DOMAIN library and not an addition to
+; stdlib — a standard library may not spend the shared namespace on a worldly
+; concept.
+
+(load "stdlib.pol")   ; `=` is a stdlib form (§8.6); there is no implicit prelude
+
+(schema economy
+
+  (type level (low high))
+
+  (type build-state (idle built))
+
+  ; A PLANT has two arrows to `level`, and the whole scenario is the gap between
+  ; them.
+  ;
+  ;   `need` — how badly this plant actually needs the allotment. It is `fixed`:
+  ;   wiring, a fact about the world, set by the instance and never varying. It
+  ;   is also LOCAL: it sits at the plant, and no move in either model reads it
+  ;   except a move belonging to that plant.
+  ;
+  ;   `ask`  — what the allocator is told. This is state: it is the only thing
+  ;   the allocation rule below can see.
+  ;
+  ; Two routes plant → level. Nothing in the schema makes them agree.
+  (type plant
+    (arrow need (to level) fixed)
+    (arrow ask  (to level)))
+
+  ; THE ALLOTMENT — one indivisible quantity of a scarce input. `at` is
+  ; vacatable: before anyone is given it, it is held by nobody, and nobody is
+  ; not a plant. `state` records whether it is still movable (`idle`) or has
+  ; been built into something (`built`, and irreversibly so — no move in either
+  ; model sets it back).
+  (type allotment
+    (maybe at plant)
+    (arrow state (to build-state)))
+
+  ; THE LAW. Two routes allotment → level: the ask of whoever holds it, and the
+  ; need of whoever holds it. They must agree — the allotment is held by a plant
+  ; whose signal is its situation. `=` is the vacuous comparison, so while the
+  ; allotment is held by nobody the law has nothing to say.
+  (equation signal-honest
+    (= allotment.at.ask allotment.at.need)))
+
+; THE ECONOMY. Three plants, one allotment of steel. Two plants genuinely need
+; it and one does not; only one of them can have it. `ask` starts `low`
+; everywhere — nobody has said anything yet — and the steel starts held by
+; nobody.
+(instance year-one economy
+  (plant clinic        (need high) (ask low))
+  (plant tractor-works (need high) (ask low))
+  (plant monument      (need low)  (ask low))
+  (allotment steel (at vacant) (state idle)))
+
+; THE ALLOCATION RULE, identical in both models. The allocator moves the steel
+; to a plant that has asked for it, as long as the steel has not yet been built
+; into anything. Note what the guard reads: `P.ask`. It cannot read `P.need`,
+; and that is not an oversight — an allocator is not standing in the plant.
+(form (allocate NAME P)
+  (transition NAME
+    (when (and (is steel.state idle)
+               (is P.ask high)
+               (not (is steel.at P))))
+    (do (set steel.at P))))
+
+; COMMITMENT, identical in both models. Steel that has been welded into a
+; building is steel that is no longer steel. One-way: `built` has no move out,
+; which is why a misallocation here is not a delay but a loss.
+(form (build NAME P)
+  (transition NAME
+    (when (and (is steel.state idle)
+               (is steel.at P)))
+    (do (set steel.state built))))

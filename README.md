@@ -26,6 +26,16 @@ bank, a brief, and every architecture the constraints permit, enumerated. Its
 most useful output is not the answer but the question it hands back: the one
 thing the brief forgot to say.
 
+The fourth is a **pair**. `calculation/` holds two models of one world that
+differ in a single conjunct, and one claims file put to both: the questions are
+held fixed so that the difference in the verdicts is attributable to the
+difference in the models, and to nothing else.
+
+The fifth is the smallest file here and the only one whose subject is a
+**claim**. `gotha/` states a proposition that forbids something, in Popper's
+sense, and asks `pol` for a situation it forbids. There is one, three moves
+away.
+
 ## The puzzles, and what `pol` answers
 
 ### 1. The river crossing (Appendix C) — `river/`
@@ -243,19 +253,105 @@ Reading a finished design out is `pol derive`'s job, not a query's — see the
 scenario's [README](arch/README.md) for why `(is k.chosen c)` in a query
 silently answers zero rows.
 
+## Two arrangements of one world, asked the same questions
+
+### 9. The calculation problem — `calculation/`
+
+*One allotment of steel. Three plants: two that need it, one that would build a
+statue with it. Only one can have it.*
+
+Every scenario above puts questions to **one** model. This one is a **pair**,
+and the pair is the instrument: `market.pol` and `planned.pol` share a schema,
+an instance, a law, a move set and every transition name, and differ in one
+conjunct — whether the request an allocator reads must be backed by the asking
+plant's own situation. The same [`market.claims`](calculation/market.claims) is
+put to both, and the verdicts are what move. The vocabulary is in
+[`libraries/economy.lib.pol`](libraries/economy.lib.pol).
+
+`pol check` answers, of both:
+- **`holds need-can-be-met`, in each** — neither arrangement is *incapable*;
+  both can end with the steel built where it was needed, and `pol` prints the
+  three-move route in each.
+- **`holds no-waste`** under prices, **`fails`** under the plan — a costless
+  request cannot be weighed against anything, so the monument's request buys the
+  steel: `ask-monument-high → allocate-monument → build-monument`. Under prices
+  the same three moves are written down; the first never becomes available.
+- **`holds need-always-still-meetable`** under prices, **`fails`** under the
+  plan — and this is the finding. The waste is not a delay: `stuck at: (…
+  steel.at=monument steel.state=built)`. Steel welded into a statue is steel no
+  longer, so no future move can put it right.
+- **`gaps: 1`**, in the plan only — `survey`, the move that would find out what
+  the requests do not carry, is a **declared hole** rather than an invented
+  procedure. That gap is the economic calculation problem in the one word the
+  language has for it.
+- **`violated in 24 reachable situations`** — of its 56, against the law both
+  models declare and both `accept` the same nine breakers for. The priced model
+  reaches no violation of it at all. (56 states against 12, for the same world:
+  a signal that is free to send multiplies the arrangements without adding
+  information.)
+
+And the pair supports the operation a pair exists for:
+
+```console
+$ pol compare calculation/market.pol calculation/planned.pol
+properties:  need-can-be-met             preserved
+             no-waste                    LOST      witness: 1. ask-monument-high 2. allocate-monument 3. build-monument
+             need-always-still-meetable  LOST      witness: 1. ask-monument-high 2. allocate-monument 3. build-monument
+```
+
+What the finding is and is not — Pol is a possibility engine, so `fails` means
+*permitted by the rules*, not *inevitable* — is worked through in the scenario's
+[README](calculation/README.md), along with what to write if you want to
+overturn it.
+
+## Refuting a claim
+
+### 10. A claim, and its falsifier — `gotha/`
+
+*One mill; seven situations; twenty-six lines. The smallest scenario here, and
+the only one whose subject is a **claim** rather than a system.*
+
+A claim earns testing, in Popper's sense, by **forbidding** something — and a
+prohibition is what `never` is, which makes the shape of this scenario the
+tool's own. The claim: *once the means of production are held in common, no
+surplus goes to a party outside the work, by the decision of a party outside the
+work.* The model grants the expropriation in full and at once, with no move
+back, and every move in it is one the programme itself asks for — the Manifesto's
+abolition, Gotha's deductions, the Commune's recall.
+
+`pol check` answers:
+- **`holds expropriation-succeeds`** — the antecedent is reached: the mill does
+  become common and the surplus does reach the hands that worked it. A model in
+  which the revolution failed would refute nothing.
+- **`fails no-exploitation`** — and the witness is the falsifier, three moves
+  long: `expropriate → appoint-board → fund-administration`. Gotha's own second
+  deduction, "the general costs of administration not belonging to production",
+  is made by a body that does not work the mill, from a mill the claim says
+  cannot be exploited.
+- **`holds exploitation-endable`** — and this is in the claims file so the
+  finding cannot be stretched: recall works, so what is exhibited is a
+  *permitted* condition, not a trap.
+
+The mechanism is in the schema rather than the moves: `worked-by`,
+`directed-by` and `surplus-to` are three arrows where speech has one word, and
+`expropriate` moves a fourth, `title`. See
+[`gotha/README.md`](gotha/README.md) for the claim's untestable sibling, why the
+criterion is taken at its strongest, and the amended claim the refutation leaves
+standing.
+
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 
 Two thin tests that exercise the last of the §17 command line on the models
 above (no new model files).
 
-### 9. `pol control` — dynamics as data — `control`
+### 11. `pol control` — dynamics as data — `control`
 `pol control oversight.pol` emits the model's **move list** as an instance of the
 standard library's `quiver` schema: one `node`, one `edge` per transition. The
 test asserts it is a `(of quiver)` instance and then **wraps and re-checks it**,
 proving the export is real Pol data that builds with the same machinery — the
 seam toward simulation maps between two models' move lists.
 
-### 10. `pol compare --git` — an amendment across commits — `gitcompare`
+### 12. `pol compare --git` — an amendment across commits — `gitcompare`
 The `oversight` repeal, but as *history* rather than two files. The test spins up
 a throwaway git repo, commits the law, then commits the repeal to the same path,
 and runs `pol compare --git HEAD~1 HEAD law.pol` — reporting `accountability
@@ -317,15 +413,23 @@ checkout. Nothing else here does.
 ## Adding a puzzle
 1. Create `<name>/<name>.pol` (the model) and `<name>.claims` (the questions).
    A `pol compare` scenario also ships a second `.pol` (see
-   `oversight/oversight-repeal.pol`). Shared vocabulary goes in
-   [`libraries/`](libraries/README.md) as a domain library.
+   `oversight/oversight-repeal.pol`), and where the pair is the point the files
+   may take a stem of their own (`calculation/market.pol`, `.../planned.pol`) —
+   `pol compare` and `pol query` read the claims file as a sibling of the base
+   model. Shared vocabulary goes in [`libraries/`](libraries/README.md) as a
+   domain library.
 2. Add a `<name>()` function to `run-tests.sh` — run `pol check` (and
    `pol compare` if the scenario needs it, on absolute paths under `$here`) and
    assert the answers with `has …` / `near …` / `lacks …` / `exit_is …` — plus a
    case in the dispatch and the `all` runner at the bottom.
 3. If the scenario re-asks its questions of the rules engine, add a `.rules`
-   file too — `modality-cross-check.sh` then compares the two answers, and a
-   disagreement is a bug in one of them.
+   file too, and compare the two answers — a disagreement is a bug in one of
+   them, never a number to adjust. Two ways to run that comparison:
+   `modality-cross-check.sh` walks the nine scenarios named in it, discovering
+   properties from their claims files; or the scenario carries its own
+   `cross-check.sh`, one line per property, naming the modality and the polarity
+   outright (`calculation/`, `gotha/`). Prefer the second — it is a dozen lines,
+   it reads without a parser, and it can put one rules file to two models.
 
 ## Notes on the solution path
 - **A holding `possible` now prints its witness — the solution.** `possible F`

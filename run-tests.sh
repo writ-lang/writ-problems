@@ -199,6 +199,95 @@ access() {
   has "access: C. the admins query is answered" "$out" "admins  (at state"
 }
 
+gotha() {
+  echo "== A claim about common ownership, put to the test =="
+  echo "   Q: \"once the means of production are held in common, no surplus is"
+  echo "      disposed of by anyone who does not work them\" — does it survive?"
+  out=$("$POL" check "$here/gotha/gotha.pol" --claims "$here/gotha/gotha.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "gotha: check reports findings" "$st" 1
+  has "gotha: seven situations — the whole world of the claim" "$out" "states: 7"
+  has "gotha: A. the antecedent is reached: the mill DOES become common" "$out" \
+    "holds  expropriation-succeeds"
+  near "gotha:    expropriation, then distribution to the weavers" "$out" \
+    "holds  expropriation-succeeds" "1. expropriate"
+  has "gotha: B. and the claim is REFUTED" "$out" "fails  no-exploitation"
+  near "gotha:    the falsifier begins with the expropriation itself" "$out" \
+    "fails  no-exploitation" "1. expropriate"
+  near "gotha:    someone must administer the deductions" "$out" \
+    "fails  no-exploitation" "2. appoint-board"
+  near "gotha:    and Gotha's own second deduction is what breaks it" "$out" \
+    "fails  no-exploitation" "3. fund-administration"
+  has "gotha: C. but the condition is not a trap — recall still works" "$out" \
+    "holds  exploitation-endable"
+  has "gotha: D. the programme's own law is broken before AND after" "$out" \
+    "violated in 3 reachable situations"
+  has "gotha:    by the three moves that write the surplus" "$out" \
+    "can be broken by: expropriate, distribute, fund-administration"
+  lacks "gotha:    all three acknowledged — nothing unadmitted" "$out" "unadmitted"
+  has "gotha: E. and the non-producers are named" "$out" "non-producers  (at state"
+
+  echo "   Q: does the rules engine reach the same three verdicts?"
+  xc=$(POL="$POL" sh "$here/gotha/cross-check.sh" 2>&1)
+  xst=$?
+  printf '%s\n' "$xc" | sed 's/^/     | /'
+  exit_is "gotha: check and derive agree on all three" "$xst" 0
+  has "gotha:    the refutation survives a second implementation" "$xc" \
+    "no-exploitation (never): 1 rows"
+}
+
+calculation() {
+  echo "== The calculation problem — one allotment of steel, three plants =="
+  echo "   Q: two economies differing in ONE guard, asked the SAME questions —"
+  echo "      which guarantees does the difference cost?"
+
+  echo "   1/2: prices — the ask must be backed by the plant's own need"
+  mkt=$("$POL" check "$here/calculation/market.pol" --claims "$here/calculation/market.claims" 2>&1)
+  mst=$?
+  printf '%s\n' "$mkt" | sed 's/^/     | /'
+  exit_is "calculation: the priced model is clean" "$mst" 0
+  has "calculation: A. the steel can reach a plant that needs it" "$mkt" "holds  need-can-be-met"
+  near "calculation:    and pol prints the route it takes" "$mkt" "holds  need-can-be-met" "allocate-clinic"
+  has "calculation:    it is never built where it is not needed" "$mkt" "holds  no-waste"
+  has "calculation:    and that stays true from every situation" "$mkt" "holds  need-always-still-meetable"
+  lacks "calculation:    the model's own law is never violated" "$mkt" "violated in"
+  lacks "calculation:    and nothing is unadmitted" "$mkt" "unadmitted"
+
+  echo "   2/2: the plan — the same file with that one conjunct repealed"
+  pln=$("$POL" check "$here/calculation/planned.pol" --claims "$here/calculation/market.claims" 2>&1)
+  pst=$?
+  printf '%s\n' "$pln" | sed 's/^/     | /'
+  exit_is "calculation: the planned model reports findings" "$pst" 1
+  has "calculation: B. the plan is NOT incapable — it can still get it right" "$pln" "holds  need-can-be-met"
+  has "calculation:    but waste is permitted by its rules" "$pln" "fails  no-waste"
+  near "calculation:    a costless request is what buys the steel" "$pln" "fails  no-waste" "ask-monument-high"
+  near "calculation:    and the monument gets it" "$pln" "fails  no-waste" "allocate-monument"
+  has "calculation: C. and the waste is terminal, not a delay" "$pln" "fails  need-always-still-meetable"
+  near "calculation:    steel welded into a statue is steel no longer" "$pln" "fails  need-always-still-meetable" "steel.state=built"
+  has "calculation: D. it violates the law both models declare" "$pln" "violated in 24 reachable situations"
+  has "calculation:    and has no procedure for what requests omit" "$pln" "gaps: 1"
+  has "calculation:    which is written down as a gap, not invented" "$pln" "no request carries"
+  lacks "calculation:    the same nine acknowledgments serve both models" "$pln" "unadmitted"
+
+  echo "   Q: what does the repeal cost, as one command?"
+  cmp=$("$POL" compare "$here/calculation/market.pol" "$here/calculation/planned.pol" 2>&1)
+  cst=$?
+  printf '%s\n' "$cmp" | sed 's/^/     | /'
+  exit_is "calculation: compare reports a loss" "$cst" 1
+  has "calculation: E. no-waste is LOST" "$cmp" "no-waste                    LOST"
+  has "calculation:    and so is the recovery from waste" "$cmp" "need-always-still-meetable  LOST"
+  has "calculation:    while the ability to get it right is preserved" "$cmp" "need-can-be-met             preserved"
+
+  echo "   Q: does the rules engine reach the same verdicts, for BOTH models?"
+  xc=$(POL="$POL" sh "$here/calculation/cross-check.sh" 2>&1)
+  xst=$?
+  printf '%s\n' "$xc" | sed 's/^/     | /'
+  exit_is "calculation: check and derive agree on all six" "$xst" 0
+  has "calculation:    including the plan's failing never" "$xc" \
+    "planned/no-waste (never): 8 rows"
+}
+
 arch() {
   echo "== System architecture from a component bank =="
   echo "   Q: 50TB of files to classify, re-runnably, then feed AI and surface"
@@ -292,12 +381,12 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The property total is counted from the claims files rather than written
-  # down, so adding a property to any scenario obliges the oracle to cover it
-  # instead of quietly shrinking the cross-check.
-  want=$(cat "$here"/*/*.claims | grep -c '^(property')
-  has "cross-check: all $want properties in the repo were considered" "$out" \
-    "considered $want properties"
+  # The nine scenarios this script walks by convention, and their 20 properties.
+  # `calculation/` and `gotha/` are not among them: each carries its own
+  # explicit cross-check.sh, run from its own test function above. Adding a
+  # property to any of the nine fails this line, which is the point of it.
+  has "cross-check: all 20 properties of the nine scenarios were considered" \
+    "$out" "considered 20 properties"
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
   has "cross-check: B. a live is its COUNTEREXAMPLE set — empty holds" \
@@ -317,7 +406,7 @@ crosscheck() {
 
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access arch control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

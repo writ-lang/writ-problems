@@ -1,0 +1,55 @@
+; The three questions of market.claims, re-asked as derivations (extension §2).
+; `cross-check.sh` beside this file puts them to BOTH models and compares each
+; against `pol check`: if the two ever disagree, one of them is wrong and the
+; disagreement is the finding — not a number to adjust.
+;
+; POLARITY — read this before "fixing" anything below.
+;   possible F   the relation is the SATISFYING set      non-empty ⟺ holds
+;   live F       the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+;   never F      the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+;
+; All three relations here are EMPTY-or-not against the priced model, where the
+; two counterexample sets are empty and the satisfying set is not — which is the
+; configuration that would catch an inversion, since swapping a polarity flips
+; a verdict rather than leaving both sets non-empty (as access.rules warns of
+; its own). The same file put to `planned.pol` returns the mirror image:
+;
+;     pol derive planned.pol market.rules no-waste
+;
+; names the situations in which the steel is standing in a statue.
+
+(relation reach 2)
+(rule (reach S S) (situation S))
+(rule (reach S T) (edge E S M) (reach M T))
+
+; `possible`: the satisfying set — situations, reachable from the start, in
+; which the steel has been built at a plant that needed it.
+(relation need-can-be-met 1)
+(rule (need-can-be-met T)
+  (init S)
+  (reach S T)
+  (holds T (and (is steel.state built) (is steel.at.need high))))
+
+; `never`: the counterexample set — the situations that satisfy the FORBIDDEN
+; guard, steel spent where there was no need for it. Writing this as the
+; satisfying set of the safe guard would invert the oracle while leaving the
+; script green.
+(relation no-waste 1)
+(rule (no-waste S)
+  (situation S)
+  (holds S (and (is steel.state built) (is steel.at.need low))))
+
+; `live`: F, then EF F, then the reachable situations where EF F fails. Steel
+; already welded into a monument shows up here, because no edge leaves `built`.
+(relation met 1)
+(rule (met T)
+  (situation T)
+  (holds T (and (is steel.state built) (is steel.at.need high))))
+
+(relation can-still-meet 1)
+(rule (can-still-meet S) (reach S T) (met T))
+
+(relation need-always-still-meetable 1)
+(rule (need-always-still-meetable S)
+  (situation S)
+  (not (can-still-meet S)))

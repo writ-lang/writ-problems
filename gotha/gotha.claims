@@ -1,0 +1,96 @@
+; THE CLAIM UNDER TEST, and its refutation.
+;
+; A claim is testable, in Popper's sense, when it FORBIDS something: the class
+; of its potential falsifiers must be non-empty. That is exactly what `never`
+; is. `(never F)` is a prohibition, F describes the potential falsifiers, and
+; `pol` searches every reachable situation for one — so a refutation here is not
+; an opinion about the claim but a route to a situation the claim says cannot
+; occur, printed move by move.
+;
+; THE UNTESTABLE VERSION, first, since it is the one usually said out loud:
+;
+;     "Communism is the end of exploitation; where exploitation persists,
+;      communism has not been achieved."
+;
+; This forbids nothing. Any situation you exhibit is answered by withdrawing the
+; antecedent, which is the conventionalist twist Popper named — and it is the
+; reason that sentence is not what is tested below. It cannot be. It has no
+; potential falsifiers.
+;
+; THE TESTABLE VERSION, which is a real claim with real content:
+;
+;     "Once the means of production are held in common, no surplus is disposed
+;      of by anyone who does not work them."
+;
+; It forbids a definite thing: a common mill whose surplus is disposed of under
+; the direction of a party that does not work it. `no-exploitation` below is
+; that prohibition, written down. If it holds, the claim survives this test.
+;
+; THE CRITERION IS TAKEN AT ITS STRONGEST, which is what makes the refutation
+; worth having. Two weaker readings are available and neither is used:
+;
+;   receipt alone   — "no non-producer ever RECEIVES any of the surplus" is
+;                     refuted by paying a bookkeeper, and refuting it would
+;                     prove nothing: the Gotha Programme provides for exactly
+;                     such payments, and no one disputes that it does.
+;   direction alone — "no non-producer ever DECIDES" is refuted by appointing a
+;                     manager, which again is asked for by the programme and
+;                     contested by nobody.
+;
+; What `no-exploitation` forbids is the CONJUNCTION: a common mill whose surplus
+; has gone to a party outside the work, by the decision of a party outside the
+; work. That is the arrangement the word names when it is used of a proprietor,
+; and a claim refuted in this form is refuted in the weaker forms a fortiori.
+;
+; EVERY MOVE THE REFUTATION USES IS ONE THE PROGRAMME CALLS FOR.
+;   expropriate         Manifesto §II — "Abolition of private property."
+;   distribute          Gotha — the remainder, after the deductions, to the
+;                       producers.
+;   appoint-board       Gotha — the deductions are administered by someone;
+;                       and Lenin, 1918, on one-man management.
+;   fund-administration Gotha — "the general costs of administration not
+;                       belonging to production", the second deduction from
+;                       the total product.
+;   recall-board        The Paris Commune, and State and Revolution — every
+;                       official elective and revocable at any time.
+; None of them is a betrayal, a degeneration or a mistake. They are the
+; programme being carried out.
+
+; 1. THE ANTECEDENT IS REACHED, IN FULL. Before a refutation can mean anything,
+; the thing being tested has to happen: the mill really does become common, and
+; the surplus really does reach the producers. `pol` prints the two moves. A
+; model in which the revolution failed would refute nothing.
+(property expropriation-succeeds
+  "the mill can be brought into common ownership with the surplus in the hands that worked it"
+  (possible (and (is loom-house.title common)
+                 (is loom-house.surplus-to weavers))))
+
+; 2. THE CLAIM. Reachable ⇒ refuted, and the witness is the falsifier.
+(property no-exploitation
+  "once the mill is common, no surplus goes to a party outside the work by the decision of a party outside the work"
+  (never (and (is loom-house.title common)
+              (is loom-house.surplus-to.produces no)
+              (is loom-house.directed-by.produces no))))
+
+; 3. HOW FAR THE REFUTATION GOES — which is not as far as the slogan opposite it
+; would like. `live` asks whether the producers can still get the surplus from
+; EVERY reachable situation. With recall in the file it holds: what the model
+; exhibits is a permitted condition, not a trap. The claim is false; "and
+; therefore it is hopeless" is a second claim, and this one does not support it.
+(property exploitation-endable
+  "from every situation, the surplus can still return to the hands that worked the mill"
+  (live (and (is loom-house.title common)
+             (is loom-house.surplus-to weavers))))
+
+; The programme's own law, and which of the programme's own moves can break it.
+; Every move that writes `surplus-to` is a breaker, whichever way it writes it —
+; `can be broken by` is about what a move WRITES, not about what it reaches.
+(accept expropriate         surplus-to-producers)
+(accept distribute          surplus-to-producers)
+(accept fund-administration surplus-to-producers)
+
+; Who is in a position to dispose of what they did not make? (§16.2) At state 0
+; the answer is the proprietor — the arrangement the expropriation abolishes.
+(query non-producers
+  (where (c claimant))
+  (is c.produces no))

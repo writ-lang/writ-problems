@@ -1,0 +1,54 @@
+; The three questions of gotha.claims, re-asked as derivations (extension §2).
+; `cross-check.sh` beside this file runs both and compares them: if `pol derive`
+; and `pol check` ever disagree, one of them is wrong and the disagreement is
+; the finding — not a number to adjust.
+;
+; POLARITY — read this before "fixing" anything below.
+;   possible F   the relation is the SATISFYING set      non-empty ⟺ holds
+;   live F       the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+;   never F      the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+;
+; `no-exploitation` is the refutation, so its set is the interesting one to read
+; directly — it is the model's potential falsifiers, enumerated:
+;
+;     pol derive gotha.pol gotha.rules no-exploitation
+
+(relation reach 2)
+(rule (reach S S) (situation S))
+(rule (reach S T) (edge E S M) (reach M T))
+
+; `possible`: the situations, reachable from the old regime, in which the mill
+; is common and the surplus is in the hands that worked it.
+(relation expropriation-succeeds 1)
+(rule (expropriation-succeeds T)
+  (init S)
+  (reach S T)
+  (holds T (and (is loom-house.title common)
+                (is loom-house.surplus-to weavers))))
+
+; `never`: the counterexample set — the situations that satisfy the FORBIDDEN
+; guard, a common mill whose surplus has gone outside the work by a decision
+; taken outside the work. Writing this as the satisfying set of the permitted
+; guard would invert the oracle while leaving the script green.
+(relation no-exploitation 1)
+(rule (no-exploitation S)
+  (situation S)
+  (holds S (and (is loom-house.title common)
+                (is loom-house.surplus-to.produces no)
+                (is loom-house.directed-by.produces no))))
+
+; `live`: F, then EF F, then the reachable situations where EF F fails. Empty,
+; because recall-board has no precondition beyond the board directing.
+(relation restored 1)
+(rule (restored T)
+  (situation T)
+  (holds T (and (is loom-house.title common)
+                (is loom-house.surplus-to weavers))))
+
+(relation can-still-restore 1)
+(rule (can-still-restore S) (reach S T) (restored T))
+
+(relation exploitation-endable 1)
+(rule (exploitation-endable S)
+  (situation S)
+  (not (can-still-restore S)))
