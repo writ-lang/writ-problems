@@ -1,0 +1,66 @@
+; The four claims of arch.claims, re-asked as derivations (extension §2) —
+; and the blueprint extraction the claims file cannot express at all.
+;
+; This file is CHECKED AGAINST arch.claims by modality-cross-check.sh, not a
+; replacement for it: two implementations of one question, so a disagreement is
+; a bug in one of them rather than a number to adjust.
+;
+; POLARITY — read this before "fixing" anything below.
+;   possible F   the relation is the SATISFYING set      non-empty ⟺ holds
+;   live F       the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+;   never F      the relation is the COUNTEREXAMPLE set   empty     ⟺ holds
+; `never` is `possible` negated, so its relation collects the situations that
+; SATISFY the forbidden guard. Writing it as the satisfying set of the safe
+; guard would invert the oracle while leaving the script green.
+
+(relation reach 2)
+(rule (reach S S) (situation S))
+(rule (reach S T) (edge E S M) (reach M T))
+
+; `possible`: the finished architectures reachable from the empty board.
+(relation realisable 1)
+(rule (realisable T) (init S) (reach S T) (holds T (is cur.at done)))
+
+; `live`: the counterexample set — reachable situations from which no finished
+; architecture is reachable. Empty, because every admissible prefix extends.
+(relation finished 1)
+(rule (finished T) (situation T) (holds T (is cur.at done)))
+
+(relation can-finish 1)
+(rule (can-finish S) (reach S T) (finished T))
+
+(relation no-dead-end 1)
+(rule (no-dead-end S) (situation S) (not (can-finish S)))
+
+; `never`: the counterexample sets — situations that satisfy what is forbidden.
+(relation rerun-is-affordable 1)
+(rule (rerun-is-affordable S)
+  (situation S)
+  (holds S (and (defined classify.chosen)
+                (not (is extract.chosen.persists yes)))))
+
+(relation crm-stays-loose 1)
+(rule (crm-stays-loose S) (situation S) (holds S (is surface.chosen direct-db)))
+
+; ---------------------------------------------------------------------------
+; READING THE DESIGN OUT. This is what a query cannot do.
+;
+; `(holds S (is K.chosen C))` with S and K bound DERIVES C — interrogator §2 is
+; explicit that this is the only way to ask "in situation S, where does this
+; arrow point", because G is a guard datum whose free variables are the rule's,
+; over a mutable cell. The same question as a `.claims` query answers empty.
+(relation choice (Situation cap comp))
+(rule (choice S K C) (situation S) (holds S (is K.chosen C)))
+
+; stage -> part, for finished architectures only: the machine-readable artifact.
+;   pol derive arch.pol arch.rules "(blueprint 183 K C)"
+(relation blueprint (Situation cap comp))
+(rule (blueprint S K C) (finished S) (choice S K C))
+
+; The half of the answer set that satisfies every STATED requirement and still
+; makes re-classification cost a full re-extract.
+(relation rerun-expensive (Situation))
+(rule (rerun-expensive S)
+  (finished S)
+  (choice S extract C)
+  (is C.persists no))

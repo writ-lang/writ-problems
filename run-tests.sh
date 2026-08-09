@@ -199,6 +199,45 @@ access() {
   has "access: C. the admins query is answered" "$out" "admins  (at state"
 }
 
+arch() {
+  echo "== System architecture from a component bank =="
+  echo "   Q: 50TB of files to classify, re-runnably, then feed AI and surface"
+  echo "      in a CRM — which architectures satisfy that, and what does the"
+  echo "      brief fail to say?"
+  out=$("$POL" check "$here/arch/arch.pol" --claims "$here/arch/arch.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /' | grep -v 'reached by'
+  exit_is "arch: check reports findings" "$st" 1
+  # The cost law of the core README, as a regression: seven stages admitting
+  # 1,2,2,2,3,2,2 parts give 1*2*2*2*3*2*2 = 96 designs, and the situations are
+  # their prefixes — 1+1+2+4+8+24+48+96 = 184, under the 2x bound.
+  has "arch: 184 situations — the prefixes of 96 designs" "$out" "states: 184"
+  has "arch: A. 96 architectures survive the constraints" "$out" "dead ends: 96"
+  has "arch:    and one can be realised" "$out" "holds  realisable"
+  near "arch:    pol prints it, stage by stage" "$out" "holds  realisable" "witness:"
+  near "arch:    starting at storage" "$out" "holds  realisable" "hold-object-store"
+  has "arch: B. no partial choice strands the build" "$out" "holds  no-dead-end"
+  has "arch: C. the brief is silent somewhere — a gap" "$out" "gaps: 1"
+  has "arch:    scanned or digital-native is never stated" "$out" "digital-native or scanned"
+  has "arch: D. re-runnable classification is NOT affordable everywhere" "$out" \
+    "fails  rerun-is-affordable"
+  # The finding: a stack meeting every STATED requirement whose extract stage
+  # discards its output, so re-classifying means re-processing the whole corpus.
+  near "arch:    the witness names the part that discards its output" "$out" \
+    "fails  rerun-is-affordable" "ext-llm-vision"
+  has "arch: E. the CRM is never coupled at the database" "$out" "holds  crm-stays-loose"
+
+  echo "   Q: read one finished design out as data — what a query cannot do"
+  bp=$("$POL" derive "$here/arch/arch.pol" "$here/arch/arch.rules" \
+    "(blueprint 183 K C)" 2>&1)
+  bst=$?
+  printf '%s\n' "$bp" | sed 's/^/     | /'
+  exit_is "arch: derive answers the blueprint" "$bst" 0
+  has "arch: F. seven stages, one part each" "$bp" "blueprint  (7 rows)"
+  has "arch:    storage is named" "$bp" "hold  object-store"
+  has "arch:    and the CRM edge is named" "$bp" "surface  ipaas"
+}
+
 control() {
   echo "== pol control — a model's dynamics as data (kernel-spec §17) =="
   echo "   Q: can we export the move list and re-use it with the same machinery?"
@@ -265,13 +304,20 @@ crosscheck() {
     "$out" "workflow/settle-able  live: counterexample set of 0"
   has "cross-check:    and a failing live names its witnesses" \
     "$out" "access/revocation-possible  live: counterexample set of 4"
-  has "cross-check: C. the unexercised never branch says so" "$out" \
-    "never: 0 properties — branch unexercised"
+  # `arch` brought the repository's first two `never` properties, so this
+  # branch — which announced itself as unexercised on every prior run — is now
+  # measured. If it ever reads "unexercised" again, a scenario went missing.
+  has "cross-check: C. the never branch is exercised" "$out" \
+    "never: 2 properties compared"
+  has "cross-check:    a never is a COUNTEREXAMPLE set, like live" "$out" \
+    "arch/crm-stays-loose  never: counterexample set of 0"
+  has "cross-check:    and a failing never names its witnesses" "$out" \
+    "arch/rerun-is-affordable  never: counterexample set of 88"
 }
 
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow access arch control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

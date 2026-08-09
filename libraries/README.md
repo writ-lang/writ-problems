@@ -8,6 +8,7 @@ scenarios are fifteen and twenty lines each.
 | --- | --- | --- |
 | [`chess.lib.pol`](chess.lib.pol) | `queens/` | squares, rows, diagonals, the `free` test, the empty board |
 | [`scheduling.lib.pol`](scheduling.lib.pol) | `jobshop-possible/`, `jobshop-best/` | machines, jobs, routings, the blocking rule, a clock |
+| [`arch.lib.pol`](arch.lib.pol) | `arch/` | components and their properties, stages and their demands, the provides/requires spans, the `fits` test, the design cursor |
 
 Load one by relative path:
 

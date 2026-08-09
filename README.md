@@ -20,6 +20,12 @@ solution path* below). The second batch is the three **§3 scenarios** — insti
 workflow, and access & privilege — which exercise `equation` laws, `accept`
 acknowledgments and `pol compare`.
 
+The third is one scenario that turns the tool around. Every model above
+**checks** something already designed; `arch/` **designs** it — a component
+bank, a brief, and every architecture the constraints permit, enumerated. Its
+most useful output is not the answer but the question it hands back: the one
+thing the brief forgot to say.
+
 ## The puzzles, and what `pol` answers
 
 ### 1. The river crossing (Appendix C) — `river/`
@@ -199,19 +205,57 @@ authority from its sponsor — the chain back to the security root.
   irreversible grant is a latch or a defect; here the model declares it a latch.
 - **`query admins`** — the accounts holding admin now (empty at the baseline).
 
+## Designing, rather than checking
+
+### 8. System architecture from a component bank — `arch/`
+
+*50TB of files, mostly PDFs. Classify them, configurably and re-runnably. Feed
+what they contain to AI. Surface it in the CRM that already exists.*
+
+The scenarios above **check** a design someone wrote. This one **produces** one:
+nineteen components, seven stages, the brief's requirements as guards, and every
+architecture the constraints permit walked by exhaustion. It is `queens/` one
+level up — a queen is placed on a square, a stage is filled by a component, and
+the same cursor keeps it to seven moves. The vocabulary is in
+[`libraries/arch.lib.pol`](libraries/arch.lib.pol).
+
+`pol check` answers:
+- **`dead ends: 96`** — 96 architectures satisfy the brief, out of 2,916 raw
+  combinations, and **`holds realisable`** prints one of them stage by stage.
+- **`gaps: 1`** — the brief never says whether the PDFs are digital-native or
+  **scanned**, and that one unstated fact decides which extract components are
+  admissible. `pol` reports the hole rather than guessing past it. *This is the
+  question to put back to whoever wrote the brief*, derived rather than intuited.
+- **`fails rerun-is-affordable`** — and this is the finding. The witness is
+  `object-store → event-stream → llm-vision → rules-engine`: every **stated**
+  requirement met, but `llm-vision` discards what it extracts, so re-running the
+  classification silently re-processes all 50TB. **Half the answer set — 48 of
+  the 96 designs — looks correct and is not.** "Be able to re-run" is a sentence
+  about the *classify* stage that constrains the *extract* stage two steps away,
+  and nothing in the brief connects them.
+- **`holds no-dead-end`** / **`holds crm-stays-loose`** — no partial choice
+  strands the build, and the CRM is never coupled at the database.
+
+It is also the repository's first **`never`** properties, which is why the
+modality cross-check no longer reports that branch as unexercised.
+
+Reading a finished design out is `pol derive`'s job, not a query's — see the
+scenario's [README](arch/README.md) for why `(is k.chosen c)` in a query
+silently answers zero rows.
+
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 
 Two thin tests that exercise the last of the §17 command line on the models
 above (no new model files).
 
-### 8. `pol control` — dynamics as data — `control`
+### 9. `pol control` — dynamics as data — `control`
 `pol control oversight.pol` emits the model's **move list** as an instance of the
 standard library's `quiver` schema: one `node`, one `edge` per transition. The
 test asserts it is a `(of quiver)` instance and then **wraps and re-checks it**,
 proving the export is real Pol data that builds with the same machinery — the
 seam toward simulation maps between two models' move lists.
 
-### 9. `pol compare --git` — an amendment across commits — `gitcompare`
+### 10. `pol compare --git` — an amendment across commits — `gitcompare`
 The `oversight` repeal, but as *history* rather than two files. The test spins up
 a throwaway git repo, commits the law, then commits the repeal to the same path,
 and runs `pol compare --git HEAD~1 HEAD law.pol` — reporting `accountability

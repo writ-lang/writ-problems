@@ -1,0 +1,34 @@
+; The questions put to the component bank, kept apart from it (wish 12).
+;
+; Two of these are `never` properties, and they are the first in this repository
+; — the modality cross-check announced that branch as unexercised on every run
+; until this scenario arrived.
+
+(load "stdlib.pol")
+
+(property realisable "some architecture fills every stage of the brief"
+  (possible (is cur.at done)))
+
+(property no-dead-end "no early choice can strand the design half-built"
+  (live (is cur.at done)))
+
+; THE CROSS-CUTTING LAW, and the one the brief does not state.
+; "Re-runnable classification" means re-reading the text. Where the extract
+; stage throws its output away, a re-run silently re-processes the whole corpus
+; — so a stack that satisfies every stated requirement can still be the wrong
+; answer. This FAILS, and the witness names the offending part.
+(property rerun-is-affordable "re-runnable classification implies persisted text"
+  (never (and (defined classify.chosen)
+              (not (is extract.chosen.persists yes)))))
+
+(property crm-stays-loose "the existing CRM is never coupled at the database"
+  (never (is surface.chosen direct-db)))
+
+; Which stages have been decided. NOTE what this query CANNOT be: writing
+; `(where (k cap) (c comp)) (is k.chosen c)` to read off WHICH part fills each
+; stage answers empty, in silence — the right of `is` is a literal or a chain,
+; never a variable to bind (§10.2). Reading a mutable cell is the rules engine's
+; job, via `holds`; see `blueprint` in arch.rules.
+(query filled
+  (where (k cap))
+  (defined k.chosen))
