@@ -3,13 +3,22 @@
 Every other scenario here hands `pol` a space to walk. This one hands it a
 **finished artifact** and asks whether it is any good.
 
-A CP-SAT solver produced the week in [`timetable.pol`](timetable.pol) — three
-groups, twenty hours each, five days, six periods, six subjects, six rooms,
-eight teachers, sixty lessons. The solver knew the constraints anyone would
-think to encode: deliver the programme, nothing in two places at once, the right
-kind of room, a big enough room, a qualified teacher who is free. It knew
-nothing else, and the whole of what it did not know is
-[`timetable.claims`](timetable.claims) — which it never saw.
+**The domain, for anyone who has not built one.** A school owes each group of
+pupils a fixed number of hours per week of each subject — its *programme*. A
+timetable puts every one of those hours into a period of the week, in a room,
+with a teacher, so that no group, teacher or room is in two places at once, each
+room suits its subject (maths wants a computer room, sport a gym) and seats its
+group, and no teacher is booked while away. The week audited here is three
+groups of twenty hours across five days of six periods: six subjects, six rooms,
+eight teachers, **sixty lessons**.
+
+**Who produced it.** [CP-SAT](https://developers.google.com/optimization/cp/cp_solver),
+the constraint solver in Google's OR-Tools: you declare unknowns and the rules
+they must obey, and it searches for values satisfying every rule at once — the
+standard tool for timetabling and rostering. It knew every constraint listed
+above. It knew nothing else, and the whole of what it did not know is
+[`timetable.claims`](timetable.claims), which it never saw. That separation is
+the only reason its answer is worth checking.
 
 The pipeline that produced the fixtures lives in a sibling repository,
 `pol-scheduling-verification`; the schedules here are **frozen**, so the

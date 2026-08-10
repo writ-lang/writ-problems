@@ -349,12 +349,15 @@ standing.
 
 ### 11. A timetable a solver produced — `timetable/`
 
-*Sixty lessons, three groups, five days. Every hard constraint met. Would a
-school accept it?*
+*Sixty lessons, three groups, five days: every hour the curriculum demands,
+placed in a period, a room and a teacher's diary. Every hard constraint met.
+Would a school accept it?*
 
 `arch/` designs and the rest walk a space; this one is handed a **decided
-artifact** and audits it. A CP-SAT solver in the sibling repository
-`pol-scheduling-verification` produced the week; the schedules here are frozen
+artifact** and audits it. The week was produced by CP-SAT — the constraint
+solver in Google's OR-Tools, which is given unknowns and the rules they must
+obey and searches for values satisfying all of them — running in the sibling
+repository `pol-scheduling-verification`; the schedules here are frozen
 fixtures, so the verdicts are exact. The solver never saw the questions, which
 is the only reason its answers are worth checking.
 
