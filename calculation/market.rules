@@ -18,38 +18,19 @@
 ;
 ; names the situations in which the steel is standing in a statue.
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
 ; `possible`: the satisfying set — situations, reachable from the start, in
 ; which the steel has been built at a plant that needed it.
-(relation need-can-be-met 1)
-(rule (need-can-be-met T)
-  (init S)
-  (reach S T)
-  (holds T (and (is steel.state built) (is steel.at.need high))))
+(satisfies need-can-be-met (and (is steel.state built) (is steel.at.need high)))
 
 ; `never`: the counterexample set — the situations that satisfy the FORBIDDEN
 ; guard, steel spent where there was no need for it. Writing this as the
 ; satisfying set of the safe guard would invert the oracle while leaving the
 ; script green.
-(relation no-waste 1)
-(rule (no-waste S)
-  (situation S)
-  (holds S (and (is steel.state built) (is steel.at.need low))))
+(satisfies no-waste (and (is steel.state built) (is steel.at.need low)))
 
 ; `live`: F, then EF F, then the reachable situations where EF F fails. Steel
 ; already welded into a monument shows up here, because no edge leaves `built`.
-(relation met 1)
-(rule (met T)
-  (situation T)
-  (holds T (and (is steel.state built) (is steel.at.need high))))
-
-(relation can-still-meet 1)
-(rule (can-still-meet S) (reach S T) (met T))
-
-(relation need-always-still-meetable 1)
-(rule (need-always-still-meetable S)
-  (situation S)
-  (not (can-still-meet S)))
+(can-reach can-still-meet need-can-be-met)
+(trapped need-always-still-meetable can-still-meet)

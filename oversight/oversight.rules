@@ -14,25 +14,17 @@
 ; still conclude" would invert the oracle's verdict on every `live` property in
 ; the repo while leaving the cross-check green.
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
-; Non-empty ⟺ `holds conviction-possible`.
-(relation conviction-possible 1)
-(rule (conviction-possible T)
-  (init S)
-  (reach S T)
-  (holds T (is docket.stage concluded)))
-
-; F, then EF F, then the reachable situations where EF F fails. A capture with
-; no restoration would show up here as a witness situation; because
-; restore-watchdog exists, the set is empty.
-(relation concluded 1)
-(rule (concluded T) (situation T) (holds T (is docket.stage concluded)))
-
-(relation can-still-conclude 1)
-(rule (can-still-conclude S) (reach S T) (concluded T))
-
-(relation accountability 1)
-(rule (accountability S) (situation S) (not (can-still-conclude S)))
+; Both claims, from one guard — F, then EF F, then the reachable situations
+; where EF F fails. Non-empty ⟺ `holds conviction-possible`; EMPTY ⟺ `holds
+; accountability`. A capture with no restoration would show up as a witness
+; situation in the last set; because restore-watchdog exists, it is empty.
+;
+; The guard was written twice here, once with an `(init S) (reach S T)` premise
+; and once with `(situation T)`. They were always the same set — the engine
+; enumerates reachable situations and nothing else (§12.3) — so the library's
+; `satisfies` spells the one that says so.
+(satisfies conviction-possible (is docket.stage concluded))
+(can-reach can-still-conclude conviction-possible)
+(trapped accountability can-still-conclude)

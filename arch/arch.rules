@@ -13,34 +13,25 @@
 ; SATISFY the forbidden guard. Writing it as the satisfying set of the safe
 ; guard would invert the oracle while leaving the script green.
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
-; `possible`: the finished architectures reachable from the empty board.
-(relation realisable 1)
-(rule (realisable T) (init S) (reach S T) (holds T (is cur.at done)))
+; `possible`: the finished architectures — the satisfying set. This file used to
+; declare the same guard twice, as `realisable` and again as `finished`, because
+; one carried an `(init S) (reach S T)` premise and the other `(situation T)`.
+; They were the same set either way (§12.3 enumerates the reachable ones and no
+; others), so there is one name now, and the sections below use it.
+(satisfies realisable (is cur.at done))
 
 ; `live`: the counterexample set — reachable situations from which no finished
 ; architecture is reachable. Empty, because every admissible prefix extends.
-(relation finished 1)
-(rule (finished T) (situation T) (holds T (is cur.at done)))
-
-(relation can-finish 1)
-(rule (can-finish S) (reach S T) (finished T))
-
-(relation no-dead-end 1)
-(rule (no-dead-end S) (situation S) (not (can-finish S)))
+(can-reach can-finish realisable)
+(trapped no-dead-end can-finish)
 
 ; `never`: the counterexample sets — situations that satisfy what is forbidden.
-(relation rerun-is-affordable 1)
-(rule (rerun-is-affordable S)
-  (situation S)
-  (holds S (and (defined classify.chosen)
-                (not (is extract.chosen.persists yes)))))
+(satisfies rerun-is-affordable (and (defined classify.chosen)
+                                    (not (is extract.chosen.persists yes))))
 
-(relation crm-stays-loose 1)
-(rule (crm-stays-loose S) (situation S) (holds S (is surface.chosen direct-db)))
+(satisfies crm-stays-loose (is surface.chosen direct-db))
 
 ; ---------------------------------------------------------------------------
 ; READING THE DESIGN OUT. This is what a query cannot do.
@@ -55,12 +46,12 @@
 ; stage -> part, for finished architectures only: the machine-readable artifact.
 ;   pol derive arch.pol arch.rules "(blueprint 183 K C)"
 (relation blueprint (Situation cap comp))
-(rule (blueprint S K C) (finished S) (choice S K C))
+(rule (blueprint S K C) (realisable S) (choice S K C))
 
 ; The half of the answer set that satisfies every STATED requirement and still
 ; makes re-classification cost a full re-extract.
 (relation rerun-expensive (Situation))
 (rule (rerun-expensive S)
-  (finished S)
+  (realisable S)
   (choice S extract C)
   (is C.persists no))

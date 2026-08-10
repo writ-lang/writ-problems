@@ -12,27 +12,14 @@
 ; the answer, not a failure: cal said "I am a knave", which no kind makes
 ; consistent, so the move that would read him is the declared gap.
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
 ; Every native classified at once. Empty ⟺ `fails census-completable`.
-(relation census-completable 1)
-(rule (census-completable T)
-  (init S)
-  (reach S T)
-  (holds T (and (defined abe.kind) (defined bea.kind) (defined cal.kind))))
+(satisfies census-completable
+  (and (defined abe.kind) (defined bea.kind) (defined cal.kind)))
 
 ; "Which natives could be knights?", asked once per native — the readings under
 ; which each is a knight. Non-empty ⟺ that native can be one.
-(relation abe-can-be-knight 1)
-(rule (abe-can-be-knight T)
-  (init S) (reach S T) (holds T (is abe.kind knight)))
-
-(relation bea-can-be-knight 1)
-(rule (bea-can-be-knight T)
-  (init S) (reach S T) (holds T (is bea.kind knight)))
-
-(relation cal-can-be-knight 1)
-(rule (cal-can-be-knight T)
-  (init S) (reach S T) (holds T (is cal.kind knight)))
+(satisfies abe-can-be-knight (is abe.kind knight))
+(satisfies bea-can-be-knight (is bea.kind knight))
+(satisfies cal-can-be-knight (is cal.kind knight))

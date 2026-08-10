@@ -17,9 +17,7 @@
 ; COLUMN-ORDERED model, so its graph is a tree of 2057 situations with 2056
 ; edges and no cycles. The unordered variant beside it has 118969 situations,
 ; and this transitive closure over that would be its own performance essay.
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
 ; `possible`: the boards, reachable from the empty one, with every queen
 ; placed. Non-empty ⟺ `holds solvable`.
@@ -28,11 +26,7 @@
 ; DATUM, and forms expand in a .rules file exactly as they do in a model, so
 ; this is the stdlib `all` reaching the engine already rewritten into the
 ; kernel's `some`.
-(relation solvable 1)
-(rule (solvable T)
-  (init S)
-  (reach S T)
-  (holds T (all (q queen) (defined q.at))))
+(satisfies solvable (all (q queen) (defined q.at)))
 
 ; The per-queen view the conjunction above cannot give: where each queen stands
 ; in a given situation. `pol derive queens.pol queens.rules "(placed 2056 Q R)"`

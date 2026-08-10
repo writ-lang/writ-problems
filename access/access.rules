@@ -20,17 +20,8 @@
 ; guard datum; `a` is lower-case on purpose, since an ALL-CAPS binder would read
 ; as a rule variable and be rejected (extension §4).
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
-(relation no-admin 1)
-(rule (no-admin T)
-  (situation T)
-  (holds T (not (some (a account) (is a.role admin)))))
-
-(relation can-still-revoke 1)
-(rule (can-still-revoke S) (reach S T) (no-admin T))
-
-(relation revocation-possible 1)
-(rule (revocation-possible S) (situation S) (not (can-still-revoke S)))
+(satisfies no-admin (not (some (a account) (is a.role admin))))
+(can-reach can-still-revoke no-admin)
+(trapped revocation-possible can-still-revoke)

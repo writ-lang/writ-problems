@@ -14,29 +14,18 @@
 (load "../libraries/scheduling.lib.pol")
 
 ; Reachability over real edges, reflexive at every situation.
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
 ; `possible`: the schedules, reachable from the empty shop, in which every job
 ; is done. Non-empty ⟺ `holds all-finish`.
-(relation all-finish 1)
-(rule (all-finish T)
-  (init S)
-  (reach S T)
-  (holds T (all-done j)))
+(satisfies all-finish (all-done j))
 
-; `live`: the counterexample set. `finished` is F; `can-still-finish` is EF F;
+; `live`: the counterexample set. `all-finish` is F; `can-still-finish` is EF F;
 ; `never-stuck` is the reachable schedules where EF F fails — the deadlocks.
-; Non-empty ⟺ `fails never-stuck`.
-(relation finished 1)
-(rule (finished T) (situation T) (holds T (all-done j)))
-
-(relation can-still-finish 1)
-(rule (can-still-finish S) (reach S T) (finished T))
-
-(relation never-stuck 1)
-(rule (never-stuck S) (situation S) (not (can-still-finish S)))
+; Non-empty ⟺ `fails never-stuck`. The F was written out twice before, once
+; here and once as `finished`; it is one guard and now has one name.
+(can-reach can-still-finish all-finish)
+(trapped never-stuck can-still-finish)
 
 ; The per-machine view the conjunctions above cannot give: who holds what, in a
 ; given situation. `pol derive jobshop.pol jobshop.rules "(holds-machine S M J)"`

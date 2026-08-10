@@ -17,36 +17,28 @@
 ;   finish" would read as the satisfying set and silently invert the oracle —
 ;   every `live` verdict would come out backwards while the script stayed green.
 
-; Reachability over REAL edges only, reflexive at every situation — the same
-; graph `Space.bwd_reach` walks (a gap edge has no successor, so `edge` omits
-; it, and a gap exit is a non-F terminal for both implementations).
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+; `reach` and the three goal forms come from the standard rules library. Its
+; `reach` is this file's former one, line for line: real edges only, reflexive
+; at every situation — the same graph `Space.bwd_reach` walks (a gap edge has no
+; successor, so `edge` omits it, and a gap exit is a non-F terminal for both
+; implementations).
+(load "ct.rules")
 
-; `possible`: the arrangements, reachable from the initial one, in which
-; everything is across intact. Non-empty ⟺ `holds solvable`.
-(relation solvable 1)
-(rule (solvable T)
-  (init S)
-  (reach S T)
-  (holds T (and (is farmer.at right) (is wolf.at right)
-                (is goat.at right)   (is cabbage.at right))))
-
-; `live`: the counterexample set. `intact` is F; `can-still-finish` is EF F;
-; `no-blunders` is the reachable situations where EF F fails — the blunders.
-; Non-empty ⟺ `fails no-blunders`.
-(relation intact 1)
-(rule (intact T)
-  (situation T)
-  (holds T (and (is farmer.at right) (is wolf.at right)
-                (is goat.at right)   (is cabbage.at right))))
-
-(relation can-still-finish 1)
-(rule (can-still-finish S) (reach S T) (intact T))
-
-(relation no-blunders 1)
-(rule (no-blunders S) (situation S) (not (can-still-finish S)))
+; Both claims, from one guard.
+;
+; `possible`: `solvable` IS the satisfying set — the arrangements in which
+; everything is across intact. Non-empty ⟺ `holds solvable`. It needs no `init`
+; premise, because the engine enumerates reachable situations and nothing else
+; (§12.3), so "reachable from the initial one" is what `situation` already means.
+;
+; `live`: `can-still-finish` is EF F, and `no-blunders` is its COMPLEMENT — the
+; reachable situations from which the crossing can no longer succeed. Non-empty
+; ⟺ `fails no-blunders`. `trapped` is the form that takes the complement, so the
+; inversion the header warns about is now a word rather than a rule to re-read.
+(satisfies solvable (and (is farmer.at right) (is wolf.at right)
+                         (is goat.at right)   (is cabbage.at right)))
+(can-reach can-still-finish solvable)
+(trapped no-blunders can-still-finish)
 
 ; A TYPED relation declaration, and the model that makes one mandatory.
 ;

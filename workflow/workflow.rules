@@ -20,28 +20,17 @@
 ; access/revocation-possible — both sets are non-empty and an inversion there
 ; is invisible to the oracle. Hence these comments.)
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
 ; Can a case get stuck? The escalation gap is a non-F terminal for both
 ; implementations: a gap edge has no successor, so neither `edge` nor
 ; `Space.bwd_reach` traverses it.
-(relation settled 1)
-(rule (settled T) (situation T) (holds T (is claim-1.stage settled)))
+(satisfies settled (is claim-1.stage settled))
+(can-reach can-still-settle settled)
+(trapped settle-able can-still-settle)
 
-(relation can-still-settle 1)
-(rule (can-still-settle S) (reach S T) (settled T))
-
-(relation settle-able 1)
-(rule (settle-able S) (situation S) (not (can-still-settle S)))
-
-; May the vacatable assignee slot always be refilled?
-(relation assigned 1)
-(rule (assigned T) (situation T) (holds T (defined claim-1.assignee)))
-
-(relation can-still-assign 1)
-(rule (can-still-assign S) (reach S T) (assigned T))
-
-(relation assignee-fillable 1)
-(rule (assignee-fillable S) (situation S) (not (can-still-assign S)))
+; May the vacatable assignee slot always be refilled? The same three lines
+; against a different guard, which is the whole reason they are forms.
+(satisfies assigned (defined claim-1.assignee))
+(can-reach can-still-assign assigned)
+(trapped assignee-fillable can-still-assign)

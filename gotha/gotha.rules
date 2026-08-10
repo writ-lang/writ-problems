@@ -13,42 +13,23 @@
 ;
 ;     pol derive gotha.pol gotha.rules no-exploitation
 
-(relation reach 2)
-(rule (reach S S) (situation S))
-(rule (reach S T) (edge E S M) (reach M T))
+(load "ct.rules")
 
-; `possible`: the situations, reachable from the old regime, in which the mill
-; is common and the surplus is in the hands that worked it.
-(relation expropriation-succeeds 1)
-(rule (expropriation-succeeds T)
-  (init S)
-  (reach S T)
-  (holds T (and (is loom-house.title common)
-                (is loom-house.surplus-to weavers))))
+; `possible`: the situations in which the mill is common and the surplus is in
+; the hands that worked it. One guard, used twice below — it was written out
+; twice before, once here and once as `restored` for the `live`.
+(satisfies expropriation-succeeds (and (is loom-house.title common)
+                                       (is loom-house.surplus-to weavers)))
 
 ; `never`: the counterexample set — the situations that satisfy the FORBIDDEN
 ; guard, a common mill whose surplus has gone outside the work by a decision
 ; taken outside the work. Writing this as the satisfying set of the permitted
 ; guard would invert the oracle while leaving the script green.
-(relation no-exploitation 1)
-(rule (no-exploitation S)
-  (situation S)
-  (holds S (and (is loom-house.title common)
-                (is loom-house.surplus-to.produces no)
-                (is loom-house.directed-by.produces no))))
+(satisfies no-exploitation (and (is loom-house.title common)
+                                (is loom-house.surplus-to.produces no)
+                                (is loom-house.directed-by.produces no)))
 
 ; `live`: F, then EF F, then the reachable situations where EF F fails. Empty,
 ; because recall-board has no precondition beyond the board directing.
-(relation restored 1)
-(rule (restored T)
-  (situation T)
-  (holds T (and (is loom-house.title common)
-                (is loom-house.surplus-to weavers))))
-
-(relation can-still-restore 1)
-(rule (can-still-restore S) (reach S T) (restored T))
-
-(relation exploitation-endable 1)
-(rule (exploitation-endable S)
-  (situation S)
-  (not (can-still-restore S)))
+(can-reach can-still-restore expropriation-succeeds)
+(trapped exploitation-endable can-still-restore)
