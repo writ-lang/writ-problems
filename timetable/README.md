@@ -21,7 +21,7 @@ above. It knew nothing else, and the whole of what it did not know is
 the only reason its answer is worth checking.
 
 The pipeline that produced the fixtures lives in a sibling repository,
-`pol-scheduling-verification`; the schedules here are **frozen**, so the
+[`pol-scheduling-verification`](https://github.com/sajonaro/pol-scheduling-verification); the schedules here are **frozen**, so the
 verdicts below are exact and cannot change because somebody upgraded a solver.
 
 ## What `pol check` answers

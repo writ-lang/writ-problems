@@ -357,7 +357,7 @@ Would a school accept it?*
 artifact** and audits it. The week was produced by CP-SAT — the constraint
 solver in Google's OR-Tools, which is given unknowns and the rules they must
 obey and searches for values satisfying all of them — running in the sibling
-repository `pol-scheduling-verification`; the schedules here are frozen
+repository [`pol-scheduling-verification`](https://github.com/sajonaro/pol-scheduling-verification); the schedules here are frozen
 fixtures, so the verdicts are exact. The solver never saw the questions, which
 is the only reason its answers are worth checking.
 
