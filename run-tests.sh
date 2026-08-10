@@ -406,7 +406,7 @@ crosscheck() {
 
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"
@@ -426,6 +426,41 @@ nth() { # 1-based index -> scenario name on stdout (nothing if out of range)
     }
     i=$((i + 1))
   done
+}
+
+timetable() {
+  echo "== A timetable a CP-SAT solver decided =="
+  echo "   Q: does it deliver the curriculum, could a school live with it, and"
+  echo "      what did the curriculum forget to say?"
+  out=$("$POL" check "$here/timetable/timetable.pol" --claims "$here/timetable/timetable.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "timetable: check reports findings" "$st" 1
+  has "timetable: ONE state — a decided timetable has nothing left to vary" "$out" "states: 1"
+  has "timetable: A. every hour the programme demands is delivered" "$out" "holds  curriculum-delivered"
+  has "timetable:    and no lesson nobody asked for" "$out" "holds  nothing-extra"
+  has "timetable:    nothing is in two places at once" "$out" "holds  no-room-clash"
+  has "timetable:    every room is the right kind, and big enough" "$out" "holds  room-big-enough"
+  has "timetable:    every teacher is qualified and available" "$out" "holds  teacher-qualified"
+  has "timetable: B. but a group starts a day with sport" "$out" "fails  sport-not-first"
+  has "timetable:    and is sent from sport straight into a lesson" "$out" "fails  time-to-change-after-sport"
+  has "timetable: C. two questions the curriculum never answered" "$out" "gaps: 2"
+  has "timetable:    may a group have a free period BETWEEN lessons?" "$out" "window-unstated"
+  has "timetable:    may two hours of one subject fall on one day?" "$out" "doubling-unstated"
+
+  # The SAME question suite, put to the week solved with those findings encoded.
+  out=$("$POL" check "$here/timetable/timetable-strict.pol" --claims "$here/timetable/timetable.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "timetable: D. the tightened week has nothing to report" "$st" 0
+  lacks "timetable:    no property fails" "$out" "fails  "
+  has "timetable:    and no silence is reached" "$out" "gaps: none"
+
+  # And the difference between the two weeks is a tool operation.
+  out=$("$POL" compare "$here/timetable/timetable.pol" "$here/timetable/timetable-strict.pol" 2>&1)
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  has "timetable: E. the school rules were GAINED" "$out" "sport-not-first             gained"
+  has "timetable:    and nothing was lost to buy them" "$out" "curriculum-delivered        preserved"
 }
 
 unknown() {

@@ -31,6 +31,12 @@ differ in a single conjunct, and one claims file put to both: the questions are
 held fixed so that the difference in the verdicts is attributable to the
 difference in the models, and to nothing else.
 
+The sixth turns the tool the other way round again. Every model above is
+written to be walked; `timetable/` is handed a **finished artifact** — a school
+week a CP-SAT solver decided — and asked whether it is any good. Its schema is
+`fixed` throughout, so the space is one situation and the whole run is spent on
+the questions.
+
 The fifth is the smallest file here and the only one whose subject is a
 **claim**. `gotha/` states a proposition that forbids something, in Popper's
 sense, and asks `pol` for a situation it forbids. There is one, three moves
@@ -339,19 +345,61 @@ The mechanism is in the schema rather than the moves: `worked-by`,
 criterion is taken at its strongest, and the amended claim the refutation leaves
 standing.
 
+## Judging what another tool decided
+
+### 11. A timetable a solver produced — `timetable/`
+
+*Sixty lessons, three groups, five days. Every hard constraint met. Would a
+school accept it?*
+
+`arch/` designs and the rest walk a space; this one is handed a **decided
+artifact** and audits it. A CP-SAT solver in the sibling repository
+`pol-scheduling-verification` produced the week; the schedules here are frozen
+fixtures, so the verdicts are exact. The solver never saw the questions, which
+is the only reason its answers are worth checking.
+
+`pol check` answers:
+- **`states: 1`** — every arrow is `fixed`, because a decided timetable has
+  nothing left to vary, so there is one situation and the run is spent
+  evaluating questions rather than enumerating. Checking is cheap exactly where
+  generating is dear: asking `pol` to *produce* a timetable passes the
+  200 000-state cap at about fifteen lesson-hours.
+- **ten properties hold** — the programme is delivered exactly (no hour missing,
+  none invented, none delivered twice), nothing is in two places at once, every
+  room is the right kind and big enough, every teacher qualified and available.
+  These restate independently what the CP model was told; agreement between two
+  statements of one requirement, in two languages, is worth more than either.
+- **`fails sport-not-first` / `fails time-to-change-after-sport`** — two rules
+  any teacher would say out loud and nobody encodes. The timetable is feasible,
+  optimal, and would be rejected by the first person to read it.
+- **`gaps: 2`** — and these are the better half. The curriculum never says
+  whether a group may have a free period *between* lessons, or whether two hours
+  of one subject may fall on one day, so the solver settled both by accident.
+  **Questions to put back to whoever wrote the curriculum.**
+- **the same claims file, put to `timetable-strict.pol`** — the week re-solved
+  with those findings encoded — reports `gaps: none` and exits 0, and
+  `pol compare` between the two prints `sport-not-first gained` with everything
+  else `preserved`. One question suite, two timetables, and the difference
+  read off rather than argued.
+
+Counting is the other thing to look at: five hours of maths is five `demand`
+entities told apart by an `ordinal`, and three properties make lesson↔demand a
+bijection — exact counting with no arithmetic anywhere. See
+[`timetable/README.md`](timetable/README.md).
+
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 
 Two thin tests that exercise the last of the §17 command line on the models
 above (no new model files).
 
-### 11. `pol control` — dynamics as data — `control`
+### 12. `pol control` — dynamics as data — `control`
 `pol control oversight.pol` emits the model's **move list** as an instance of the
 standard library's `quiver` schema: one `node`, one `edge` per transition. The
 test asserts it is a `(of quiver)` instance and then **wraps and re-checks it**,
 proving the export is real Pol data that builds with the same machinery — the
 seam toward simulation maps between two models' move lists.
 
-### 12. `pol compare --git` — an amendment across commits — `gitcompare`
+### 13. `pol compare --git` — an amendment across commits — `gitcompare`
 The `oversight` repeal, but as *history* rather than two files. The test spins up
 a throwaway git repo, commits the law, then commits the repeal to the same path,
 and runs `pol compare --git HEAD~1 HEAD law.pol` — reporting `accountability

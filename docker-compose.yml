@@ -59,6 +59,13 @@ services:
     image: pol-problems
     command: ["access"]
 
+  # A timetable CP-SAT decided, audited: one state, two broken school rules,
+  # two questions the curriculum never answered.
+  timetable:
+    build: .
+    image: pol-problems
+    command: ["timetable"]
+
   # `pol control` — a model's dynamics emitted as data, then re-checked.
   control:
     build: .
