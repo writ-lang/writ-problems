@@ -32,7 +32,7 @@ set -u
 here=$(cd "$(dirname "$0")" && pwd)
 POL=${POL:-pol}
 
-scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column"
+scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch two-phase-commit db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column"
 
 considered=0
 compared=0
@@ -41,6 +41,7 @@ bad=0
 n_possible=0
 n_live=0
 n_never=0
+n_inevitable=0
 
 ok() { printf '  [ok]   %s\n' "$1"; }
 no() {
@@ -64,11 +65,22 @@ props() {
       for (i = 1; i <= n; i++) {
         if (t[i] == "property" && t[i-1] == "(") {
           name = t[i+1]
-          for (j = i + 2; j <= n; j++)
-            if (t[j-1] == "(" &&
-                (t[j] == "possible" || t[j] == "live" || t[j] == "never")) {
-              print name, t[j]; break
-            }
+          # The property datum ends where its opening paren closes. Bounding the
+          # scan matters now that a modality can carry a trailing clause: a
+          # `(fair …)` belongs to THIS property or to none.
+          depth = 1; last = n
+          for (k = i + 1; k <= n; k++) {
+            if (t[k] == "(") depth++
+            else if (t[k] == ")") { depth--; if (depth == 0) { last = k; break } }
+          }
+          mod = ""; fair = "plain"
+          for (j = i + 2; j <= last; j++) {
+            if (t[j-1] == "(" && mod == "" &&
+                (t[j] == "possible" || t[j] == "live" ||
+                 t[j] == "never" || t[j] == "inevitable")) mod = t[j]
+            if (t[j-1] == "(" && t[j] == "fair") fair = "fair"
+          }
+          if (mod != "") print name, mod, fair
         }
       }
     }' "$1"
@@ -111,14 +123,26 @@ for s in $scenarios; do
 
   # A `while read` over a pipe runs in a subshell in POSIX sh, which would throw
   # away every counter this script exists to report. Feed it from a here-doc.
-  while read -r name modality; do
+  while read -r name modality fairness; do
     [ -n "$name" ] || continue
     considered=$((considered + 1))
     case "$modality" in
     possible) n_possible=$((n_possible + 1)) ;;
     live) n_live=$((n_live + 1)) ;;
     never) n_never=$((n_never + 1)) ;;
+    inevitable) n_inevitable=$((n_inevitable + 1)) ;;
     esac
+
+    # A fairness assumption narrows which runs the question is about, and
+    # ct.rules §8 does not read one — it encodes the plain modality, over every
+    # run there is. Deriving such a property here would answer a DIFFERENT
+    # question and report the disagreement as a bug, so it is skipped and said
+    # out loud rather than quietly left out of the count.
+    if [ "$fairness" = fair ]; then
+      skipped=$((skipped + 1))
+      ok "$s/$name  $modality: carries (fair …) — no rules encoding, skipped"
+      continue
+    fi
 
     said=$(verdict "$check" "$name")
     if [ "$said" = na ]; then
@@ -145,7 +169,7 @@ for s in $scenarios; do
       what="satisfying set of"
       if [ "$rows" -gt 0 ]; then derived=holds; else derived=fails; fi
       ;;
-    live | never)
+    live | never | inevitable)
       what="counterexample set of"
       if [ "$rows" -eq 0 ]; then derived=holds; else derived=fails; fi
       ;;
@@ -167,8 +191,12 @@ EOF
 done
 
 echo
-echo "considered $considered properties: $compared compared, $skipped skipped n/a"
-echo "  possible: $n_possible   live: $n_live"
+# Two reasons a property is not compared, and neither is a failure: `pol check`
+# said n/a, or the property carries a fairness clause the rules encoding does
+# not model. Counted together, because what the line is for is the arithmetic —
+# considered = compared + skipped, so nothing fell out silently.
+echo "considered $considered properties: $compared compared, $skipped not compared"
+echo "  possible: $n_possible   live: $n_live   inevitable: $n_inevitable"
 
 # An untested code path must not read as a tested one. The counterexample
 # encoding for `never` is the same shape as `live`'s, but nothing in the repo

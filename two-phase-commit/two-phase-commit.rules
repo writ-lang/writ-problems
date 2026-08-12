@@ -1,0 +1,39 @@
+; The scenario's properties re-asked as derivations, for `modality-cross-check.sh`
+; — two independent implementations of one question, so a disagreement is a bug
+; in one of them rather than a number to adjust.
+;
+; POLARITY, which every file here carries a warning about because it inverts
+; silently:
+;
+;   possible    the SATISFYING set     non-empty ⟺ holds
+;   never       the FORBIDDEN set      empty     ⟺ holds
+;   live        the COUNTEREXAMPLE set empty     ⟺ holds
+;   inevitable  the ESCAPE set         empty     ⟺ holds
+;
+; `must-decide-if-applied` is deliberately absent. It carries a `(fair …)`
+; clause, and ct.rules §8 does not read one — it encodes the plain modality,
+; over every run there is. Deriving it here would answer a different question
+; from the one `pol check` answers and call the disagreement a bug. The
+; cross-check skips a fair property for the same reason.
+
+(load "stdlib.pol")
+(load "ct.rules")
+
+; possible — the satisfying set is the answer.
+(satisfies can-commit (all (p participant) (is p.state committed)))
+
+; never — the satisfying set of the FORBIDDEN guard, which must be empty.
+(satisfies atomic (and (some (p participant) (is p.state committed))
+                       (some (q participant) (is q.state aborted))))
+
+; live — §7's three lines, ending in the counterexample set.
+(satisfies decided (all (p participant)
+  (or (is p.state committed) (is p.state aborted))))
+(can-reach can-still-decide decided)
+(trapped   can-decide       can-still-decide)
+
+; inevitable — §8's three, ending in the escape set: the situations at which a
+; run stops short of deciding, or starts going round without ever deciding.
+(off-set  undecided decided)
+(stays    waiting   undecided)
+(escaping must-decide undecided waiting)

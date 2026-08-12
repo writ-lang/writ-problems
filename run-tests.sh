@@ -184,6 +184,54 @@ workflow() {
   has "workflow:    and the assignee slot stays fillable" "$out" "holds  assignee-fillable"
 }
 
+two_phase_commit() {
+  d="$here/two-phase-commit"
+  echo "== Two-phase commit — agreeing to commit across parties that can fail =="
+  echo "   Q: can the parties disagree, can they be left waiting for ever, and"
+  echo "      what does the obvious cure for the waiting cost?"
+  out=$("$POL" check "$d/two-phase-commit.pol" --claims "$d/two-phase-commit.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /' | grep -v 'reached by:'
+  exit_is "2pc: check reports findings" "$st" 1
+  has "2pc: 84 situations of two participants and a coordinator" "$out" "states: 84"
+
+  has "2pc: A. ATOMICITY holds — never one committed and another aborted" "$out" "holds  atomic"
+  has "2pc:    and committing is actually reachable" "$out" "holds  can-commit"
+  near "2pc:    with the route that gets there" "$out" "holds  can-commit" "witness:"
+
+  # The textbook blocking result, and pol finds it in two moves: one participant
+  # prepares — surrendering its right to decide — and the coordinator dies.
+  has "2pc: B. but a prepared participant CAN be left unable to decide" "$out" "fails  can-decide"
+  near "2pc:    two moves is all it takes" "$out" "fails  can-decide" "2. c-crash"
+  near "2pc:    and it is stranded with the coordinator gone" "$out" "fails  can-decide" "c.state=crashed"
+
+  # `live` and `inevitable` both fail here, and that is the expected order:
+  # inevitable is the stronger of the two, so nothing passes it and fails live.
+  has "2pc: C. and no run is obliged to decide either" "$out" "fails  must-decide"
+  has "2pc:    which a fairness assumption cannot rescue — a stop is not a starve" "$out" "fails  must-decide-if-applied"
+  near "2pc:    and the verdict prints what it assumed" "$out" "fails  must-decide-if-applied" "assuming fair:"
+
+  # The retransmitting network: no crash at all, and the two liveness questions
+  # come apart. This is the whole reason `inevitable` exists.
+  lossy=$("$POL" check "$d/two-phase-commit-lossy.pol" --claims "$d/two-phase-commit.claims" 2>&1)
+  printf '%s\n' "$lossy" | sed 's/^/     | /' | grep -v 'reached by:'
+  has "2pc: D. over a network that drops and resends, deciding stays REACHABLE" "$lossy" "holds  can-decide"
+  has "2pc:    and yet a run can decline it for ever" "$lossy" "fails  must-decide"
+  near "2pc:    naming the situation the run circles in" "$lossy" "fails  must-decide" "c.decision=commit"
+  has "2pc:    assume the told participant applies, and it terminates" "$lossy" "holds  must-decide-if-applied"
+
+  # The trade, priced. Letting a stranded participant give up buys every
+  # liveness property and sells the one the protocol exists for.
+  cmp=$("$POL" compare "$d/two-phase-commit.pol" "$d/two-phase-commit-timeout.pol" 2>&1)
+  cst=$?
+  printf '%s\n' "$cmp" | sed 's/^/     | /'
+  exit_is "2pc: E. compare reports a lost guarantee" "$cst" 1
+  has "2pc:    the timeout cure LOSES atomicity" "$cmp" "atomic                  LOST"
+  has "2pc:    and pol prints the run that breaks it" "$cmp" "p2-timeout"
+  has "2pc:    while every liveness property is gained" "$cmp" "must-decide             gained"
+  has "2pc:    including the plain reachability one" "$cmp" "can-decide              gained"
+}
+
 access() {
   echo "== Access & privilege (kernel-spec §3) =="
   echo "   Q: is revocation always possible, or is some privilege permanent?"
@@ -381,14 +429,20 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The twelve scenarios this script walks by convention, and their 26 properties.
-  # `calculation/` and `gotha/` are not among them: each carries its own
-  # explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the twelve fails this line, which is the point of it —
-  # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
-  # and this line is where each of those had to be said out loud.
-  has "cross-check: all 26 properties of the twelve scenarios were considered" \
-    "$out" "considered 26 properties"
+  # The thirteen scenarios this script walks by convention, and their 31
+  # properties. `calculation/` and `gotha/` are not among them: each carries its
+  # own explicit cross-check.sh, run from its own test function above. Adding a
+  # property to any of the thirteen fails this line, which is the point of it —
+  # the count went 20 -> 22 -> 26 as the three db-migration-problems joined, and
+  # 26 -> 31 with two-phase-commit, and this line is where each of those had to
+  # be said out loud.
+  has "cross-check: all 31 properties of the thirteen scenarios were considered" \
+    "$out" "considered 31 properties"
+  # One of the 31 is not compared, and the count above is the only place that
+  # would notice if the reason changed: two-phase-commit asks one property under
+  # a fairness assumption, which ct.rules §8 does not encode.
+  has "cross-check:    with the one fair property skipped, and saying why" \
+    "$out" "carries (fair …) — no rules encoding, skipped"
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
   has "cross-check: B. a live is its COUNTEREXAMPLE set — empty holds" \
@@ -398,8 +452,16 @@ crosscheck() {
   # `arch` brought the repository's first two `never` properties, so this
   # branch — which announced itself as unexercised on every prior run — is now
   # measured. If it ever reads "unexercised" again, a scenario went missing.
+  # two-phase-commit's atomicity is the third.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 2 properties compared"
+    "never: 3 properties compared"
+  # And `inevitable`, whose two are two-phase-commit's — the newest modality,
+  # and the one whose second implementation is newest, so the line that says it
+  # is being compared at all is worth having.
+  has "cross-check: D. the inevitable branch is exercised too" "$out" \
+    "inevitable: 2"
+  has "cross-check:    an inevitable is its ESCAPE set, empty holds" "$out" \
+    "two-phase-commit/must-decide  inevitable: counterexample set of 10"
   has "cross-check:    a never is a COUNTEREXAMPLE set, like live" "$out" \
     "arch/crm-stays-loose  never: counterexample set of 0"
   has "cross-check:    and a failing never names its witnesses" "$out" \
@@ -536,7 +598,7 @@ add_a_required_column() {
 
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

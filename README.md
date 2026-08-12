@@ -226,9 +226,46 @@ authority from its sponsor — the chain back to the security root.
   irreversible grant is a latch or a defect; here the model declares it a latch.
 - **`query admins`** — the accounts holding admin now (empty at the baseline).
 
+### 8. Two-phase commit — `two-phase-commit/`
+A coordinator and two participants agreeing to commit or agreeing to abort. A
+participant that votes yes is **prepared**: it has promised, so it may no longer
+decide for itself, and it holds its locks until told. The coordinator may crash
+at any moment, including after deciding and after telling one participant but
+not the other. It is the scenario that uses all four modalities, and the only
+one that asks a question under an assumption.
+
+`pol check` answers:
+- **`holds atomic`** — `(never (and (some … committed) (some … aborted)))`:
+  the parties finish together or not at all, over all 84 situations. A holding
+  `never` is a census, not a search that came up empty.
+- **`fails can-decide`** — `(live …)`: a prepared participant can be left
+  unable to decide, and the counterexample is **two moves**: `p1-yes`,
+  `c-crash`. This is the textbook criticism of the protocol, found rather than
+  recalled.
+- **`fails must-decide`** — `(inevitable …)`: nor is any run *obliged* to
+  decide. `inevitable` is the stronger of the two, so nothing passes it and
+  fails `live`; where they come apart is the next model.
+- **`fails must-decide-if-applied`** — the same question under `(fair p1-commit
+  …)`, and it still fails, because no assumption about scheduling rescues a
+  protocol that has stopped. The verdict prints what it assumed, so it cannot
+  be quoted as the unconditional one.
+
+`two-phase-commit-lossy.pol` has no crash at all — the network simply drops a
+message and the coordinator sends it again, which is a *correct* protocol. There
+`can-decide` **holds** and `must-decide` **fails**: deciding is always still
+available, and a run can decline it for ever. Assume a participant that has been
+told the decision eventually applies it, and `must-decide-if-applied` holds. That
+gap is the whole reason for the fourth modality, and for letting a question carry
+an assumption the model does not.
+
+`two-phase-commit-timeout.pol` is the tempting cure — let a stranded participant
+give up — and `pol compare` prices it in one table: `atomic` **LOST**, with the
+seven-move run that breaks it, and every liveness property **gained**. Safety
+sold for termination, stated rather than argued.
+
 ## Designing, rather than checking
 
-### 8. System architecture from a component bank — `arch/`
+### 9. System architecture from a component bank — `arch/`
 
 *50TB of files, mostly PDFs. Classify them, configurably and re-runnably. Feed
 what they contain to AI. Surface it in the CRM that already exists.*
@@ -266,7 +303,7 @@ silently answers zero rows.
 
 ## Two arrangements of one world, asked the same questions
 
-### 9. The calculation problem — `calculation/`
+### 10. The calculation problem — `calculation/`
 
 *One allotment of steel. Three plants: two that need it, one that would build a
 statue with it. Only one can have it.*
@@ -317,7 +354,7 @@ overturn it.
 
 ## Refuting a claim
 
-### 10. A claim, and its falsifier — `gotha/`
+### 11. A claim, and its falsifier — `gotha/`
 
 *One mill; seven situations; twenty-six lines. The smallest scenario here, and
 the only one whose subject is a **claim** rather than a system.*
@@ -352,7 +389,7 @@ standing.
 
 ## Judging what another tool decided
 
-### 11. A timetable a solver produced — `timetable/`
+### 12. A timetable a solver produced — `timetable/`
 
 *Sixty lessons, three groups, five days: every hour the curriculum demands,
 placed in a period, a room and a teacher's diary. Every hard constraint met.
@@ -397,7 +434,7 @@ bijection — exact counting with no arithmetic anywhere. See
 
 ## Gating a change before it ships
 
-### 12. Database migrations, gated — `db-migration-problems/`
+### 13. Database migrations, gated — `db-migration-problems/`
 
 Three schema changes that look routine, each with a plan that reads correctly
 and goes wrong anyway. Each directory holds its own page, written for someone
@@ -448,14 +485,14 @@ one. Use `check`.
 Two thin tests that exercise the last of the §17 command line on the models
 above (no new model files).
 
-### 13. `pol control` — dynamics as data — `control`
+### 14. `pol control` — dynamics as data — `control`
 `pol control oversight.pol` emits the model's **move list** as an instance of the
 standard library's `quiver` schema: one `node`, one `edge` per transition. The
 test asserts it is a `(of quiver)` instance and then **wraps and re-checks it**,
 proving the export is real Pol data that builds with the same machinery — the
 seam toward simulation maps between two models' move lists.
 
-### 14. `pol compare --git` — an amendment across commits — `gitcompare`
+### 15. `pol compare --git` — an amendment across commits — `gitcompare`
 The `oversight` repeal, but as *history* rather than two files. The test spins up
 a throwaway git repo, commits the law, then commits the repeal to the same path,
 and runs `pol compare --git HEAD~1 HEAD law.pol` — reporting `accountability

@@ -1,0 +1,46 @@
+(load "stdlib.pol")
+
+; The questions about two-phase commit, kept beside the model and asked of every
+; variant of it — which is the point of a claims file being a separate document.
+
+; ── the safety property the protocol exists to provide ────────────────────────
+; ATOMICITY: the parties finish together or not at all. Never one committed
+; while another aborted. `never` is a census over every reachable situation, so
+; a holding `never` is a proof and not a search that came up empty.
+(property atomic "no participant commits while another aborts"
+  (never (and (some (p participant) (is p.state committed))
+              (some (q participant) (is q.state aborted)))))
+
+; The protocol is worth running: committing is actually reachable, and a holding
+; `possible` prints the route that gets there.
+(property can-commit "the parties can all commit"
+  (possible (all (p participant) (is p.state committed))))
+
+; ── the liveness property it does NOT provide ─────────────────────────────────
+; `live` asks whether deciding is STILL REACHABLE from every reachable
+; situation. Where the coordinator can crash it is not, and the counterexample
+; is two moves long: one participant prepares, the coordinator dies.
+(property can-decide "from anywhere, every participant can still decide"
+  (live (all (p participant)
+    (or (is p.state committed) (is p.state aborted)))))
+
+; `inevitable` asks the stronger thing, and the one "does this terminate"
+; actually means: is there any run at all that never decides? A run avoids the
+; goal by stopping short of it or by going round for ever, and both are
+; failures. This is the property that separates the plain protocol from the
+; retransmitting one, where `can-decide` HOLDS and this one does not.
+(property must-decide "no run avoids deciding"
+  (inevitable (all (p participant)
+    (or (is p.state committed) (is p.state aborted)))))
+
+; ── the same question, of the runs that actually happen ───────────────────────
+; A run in which a participant is handed the decision and declines to apply it,
+; again and again for ever, is not a run anyone would call a counterexample.
+; `(fair …)` says so. The assumption is attached to THIS property rather than
+; written into the model, so the unconditional question above survives beside
+; it — and every verdict prints what it assumed.
+(property must-decide-if-applied
+  "…and no run avoids it, if a participant told the decision eventually applies it"
+  (inevitable
+    (all (p participant) (or (is p.state committed) (is p.state aborted)))
+    (fair p1-commit p1-abort p2-commit p2-abort)))
