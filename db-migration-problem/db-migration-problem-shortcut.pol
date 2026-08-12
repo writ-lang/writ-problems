@@ -1,6 +1,6 @@
 ; The same migration, with ONE CONJUNCT REMOVED — and that is the whole file.
 ;
-; This is migration.pol with `(is full-col.filled yes)` struck from
+; This is db-migration-problem.pol with `(is full-col.filled yes)` struck from
 ; `deploy-r3`'s guard: the release that starts READING the new column is
 ; allowed out before the backfill has finished. It is the tempting shortcut,
 ; because at that moment the column exists, every live release writes it, and
@@ -14,7 +14,7 @@
 ; `pol check` exits 1 on this file. That is the gate refusing the merge.
 
 (load "stdlib.pol")
-(load "migration.lib.pol")
+(load "db-migration-problem.lib.pol")
 
 (schema migration
 
@@ -148,7 +148,7 @@
   (when (and settled (is prod.new r1) (is full-col.state present)))
   (do (set prod.new r2)))
 
-; r3 is the first release to READ the new column. In migration.pol it waits for
+; r3 is the first release to READ the new column. In db-migration-problem.pol it waits for
 ; the backfill; here it does not.
 (transition deploy-r3
   (when (and settled (is prod.new r2)))          ; <- the backfill check, gone

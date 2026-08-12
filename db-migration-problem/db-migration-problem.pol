@@ -18,10 +18,10 @@
 ; measured against, so `pol check` reports not merely that a rule is violated
 ; but WHICH move can break it. That is the gate's output. A plan whose runbook
 ; is right leaves every law unbreakable and exits 0; the sibling file
-; migration-shortcut.pol drops one conjunct from one guard and exits 1.
+; db-migration-problem-shortcut.pol drops one conjunct from one guard and exits 1.
 
 (load "stdlib.pol")
-(load "migration.lib.pol")
+(load "db-migration-problem.lib.pol")
 
 (schema migration
 

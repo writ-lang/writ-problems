@@ -37,7 +37,7 @@ week a CP-SAT solver decided — and asked whether it is any good. Its schema is
 `fixed` throughout, so the space is one situation and the whole run is spent on
 the questions.
 
-The seventh is the only one whose subject is a **change**: `migration/` gates
+The seventh is the only one whose subject is a **change**: `db-migration-problem/` gates
 an expand/contract column rename, proving a deploy plan safe at every instant —
 including the instants when a rolling deploy has two releases serving at once —
 and refusing the plan that reads before it backfills.
@@ -397,45 +397,47 @@ bijection — exact counting with no arithmetic anywhere. See
 
 ## Gating a change before it ships
 
-### 12. Expand/contract, gated — `migration/`
+### 12. Renaming a database column safely — `db-migration-problem/`
 
-Renaming a column under a live service, as a state machine. A rename cannot be
-one step: the database and the code deploy separately, and a rolling deploy
-runs **two releases at once**, so the rename becomes a sequence and the
-question is whether it is safe at every instant — including the instants when
-two releases are serving together. That is a question about a state space
-rather than a diff, which is why it is worth exhausting: a reviewer checks the
-steps, `pol` checks every situation the steps can produce.
+You cannot rename a column on a running service in one step. The database and
+the application deploy separately, so there is always a gap where one of them
+is out of step with the other. Worse, most deploys are rolling: for a minute,
+two versions of the application are live at the same time, and both are serving
+real traffic.
 
-The moves are the operator's (the DDL and the deploys) and their guards **are**
-the runbook. The four laws are the compatibility rules, and they are laws
-rather than guards on purpose — a law is measured against, so `pol check`
-reports not merely that a rule broke but **which move can break it**.
+The usual answer is expand/contract — add the new column, run both for a while,
+remove the old one when nothing uses it. This scenario writes that plan down as
+a state machine and checks whether it is safe at *every* moment, including the
+moments mid-rollout when two versions disagree about what the table looks like.
 
-`pol check migration.pol --claims migration.claims` answers:
-- **`holds completes`** — the rename can be finished, **and the witness is the
-  runbook**: nine steps in an order nobody wrote down, printed as the evidence.
-- **`holds no-dead-ends`** — from every reachable situation it can still be
-  finished; no step strands production half-migrated. The river's
-  `no-blunders`, asked of a deploy.
-- **exit 0** — the gate passes.
+`pol check` on the good plan exits 0 and answers:
 
-`migration-shortcut.pol` is the same file with **one conjunct removed**: the
-release that starts *reading* the new column no longer waits for the backfill.
-The same claims file is put to both, so the difference in the verdicts is
-attributable to that conjunct and nothing else. It **fails** — `read-of-filled`
-violated in 5 reachable situations, `deploy-r3` named as the step, four moves
-in — and exits 1. Note it still `holds completes`, in **eight** steps rather
-than nine: the unsafe plan is genuinely faster, which is why it is tempting and
-why "it passed in staging" is not evidence.
+- **`holds completes`** — the rename can be finished, and the nine steps it
+  prints are the runbook. Nobody wrote them in that order; `pol` searched for a
+  way to reach the end and printed the route it found.
+- **`holds no-dead-ends`** — from every situation you could be in, the rename
+  can still be finished. There is no move that paints you into a corner.
 
-And one instrument that does *not* catch it: `pol compare` of the two plans
-reports every law and property **preserved**, exit 0 — correctly, since the
-shortcut declares the same laws and keeps the same properties. What it loses is
-that a law it declares is now violated, which comparison does not examine.
-Comparison answers "which guarantees did this version drop"; this gate needs
-`check`, which answers "does it keep the ones it declares". Worth knowing
-before someone wires the wrong verb into CI.
+`db-migration-problem-shortcut.pol` is the same file with **one condition
+removed**: the version that starts *reading* the new column no longer waits for
+the backfill to finish. The same questions are put to both files, so any
+difference in the answers comes from that one condition.
+
+It fails, and exits 1: reading before the backfill is broken in 5 reachable
+situations, reached in four moves, with `deploy-r3` named as the step that does
+it. The reason it is worth catching automatically is that it looks fine. Every
+row in a staging database was written after the column was added, so every row
+in staging has a value. Only production has rows that predate it.
+
+And it still finishes — in **eight** steps rather than nine. The unsafe plan is
+genuinely faster. That is the general shape of the problem: the dangerous plan
+is not the one that looks dangerous.
+
+One warning recorded there for anyone wiring this into CI: `pol compare` of the
+two plans reports everything preserved and exits 0. It is answering a different
+question — "which guarantees did this version give up?" — and the shortcut gave
+none up. It still declares the same rules; it just breaks one of them. Use
+`check`.
 
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 
