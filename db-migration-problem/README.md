@@ -80,10 +80,99 @@ actually make, and this directory is about catching them.
 
 ---
 
-## 3. Four ways it can still go wrong
+## 3. Start where you actually start: the SQL
 
-Here are the four mistakes this example checks for. Each is easy to make and
-none of them is obvious from reading a plan.
+You do not write models. You write migrations, in SQL. So that is where this
+example begins.
+
+There are three files here, one per step of the pattern:
+
+| file | what it is |
+| --- | --- |
+| `01-before.sql` | the table as it stands in production today |
+| `02-expand.sql` | the same table with the new column added beside the old |
+| `03-contract.sql` | the same table with the old column removed |
+
+Each is ordinary DDL. Each also ends with one `INSERT` of a representative
+user, so that every file can be checked on its own rather than only meaning
+something next to the others.
+
+`pol sql` reads a `.sql` file and writes a model:
+
+```console
+$ pol sql 02-expand.sql --with-data > expand.pol
+$ pol check expand.pol
+states: 1   edges: 0
+```
+
+You do not have to read the generated file. The part worth looking at is the
+table:
+
+```lisp
+(type users
+  (text name)
+  (text? full-name)
+  (text email))
+```
+
+Three columns. `text` means the column is required. `text?` — with the question
+mark — means it is allowed to be NULL.
+
+**That question mark is the entire content of the expand step.**
+
+### The one-word mistake
+
+`02-expand-wrong.sql` is the same file with `NOT NULL` added to the new column.
+It is the most common way to get this step wrong. It reads well, because
+`NOT NULL` is good practice nearly everywhere else, and it passes on an empty
+database because there are no rows to contradict it.
+
+Converted, it comes out as:
+
+```lisp
+(text full-name)
+```
+
+The question mark is gone. That is the whole difference, and on its own it is
+only visible, not provable. The `INSERT` at the bottom of the file is what
+makes it provable — because it is the user who already existed, and at the
+instant the column appears, that user has no value for it:
+
+```console
+$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
+$ pol check wrong.pol
+pol: wrong.pol: value out of domain for cell users.full-name for u1
+$ echo $?
+2
+```
+
+**Refused**, and it names the row. The column is required and `u1` has no value
+for it, so that table and that row cannot both exist. Which is exactly what
+your database will say when the `ALTER` runs against a table that is not empty.
+
+This is worth noticing on its own terms: it is a check you can run against a
+single migration file, before anything is deployed, with no model to write.
+
+### What the SQL cannot tell you
+
+The DDL says what the table looks like at each step. That is all it says.
+
+It does not say what **order** to run the steps in relative to your deploys. It
+does not say what your **code** reads and writes at each version. Neither fact
+is in the file, and both are where the harder mistakes live.
+
+So the rest of this page is about the part the SQL cannot carry: the sequence.
+That part has to be written down by hand, because it is knowledge about your
+deploy process rather than about your schema.
+
+---
+
+## 4. Four ways it can still go wrong
+
+The mistake in the last section was caught by looking at one file. The four
+below cannot be, because none of them is visible in any single file — each is
+about the order things happen in, or about what your code does. Each is easy to
+make and none is obvious from reading a plan.
 
 ### Mistake 1 — reading a column that is not there yet
 
@@ -154,7 +243,7 @@ for about ninety seconds.
 
 ---
 
-## 4. What this directory does
+## 5. What this directory does
 
 It writes the migration down as a model, and then it checks every possible way
 the migration could unfold.
@@ -181,13 +270,23 @@ difference is the one changed line.
 
 ---
 
-## 5. Running it
+## 6. Running it
 
 You need `pol` installed. If you do not have it, see the
 [install instructions](https://github.com/sajonaro/pol#install); the short
 version is `opam pin add pol git+https://github.com/sajonaro/pol.git`.
 
-Then, from this directory:
+From this directory, the DDL first:
+
+```console
+$ pol sql 02-expand.sql --with-data > expand.pol
+$ pol check expand.pol
+
+$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
+$ pol check wrong.pol            # refused: exit 2
+```
+
+Then the sequence:
 
 ```console
 $ pol check db-migration-problem.pol --claims db-migration-problem.claims
@@ -203,7 +302,7 @@ Note that the second command uses the *same* questions file as the first.
 
 ---
 
-## 6. Reading the output: the safe plan
+## 7. Reading the output: the safe plan
 
 Here is what the first command prints, in full, with an explanation of each
 part underneath.
@@ -321,7 +420,7 @@ one. A plan can have a working path and still have a trap next to it.
 
 ---
 
-## 7. The unsafe plan
+## 8. The unsafe plan
 
 `db-migration-problem-shortcut.pol` is the same file with one condition
 deleted. In the safe plan, the step that deploys the reader has this condition:
@@ -399,7 +498,7 @@ dangerous plan is not the one that looks dangerous.
 
 ---
 
-## 8. One tool that does not catch it
+## 9. One tool that does not catch it
 
 `pol` has a command for comparing two versions of a model, which sounds like
 exactly what you would want here:
@@ -429,7 +528,7 @@ will go green on a plan that breaks production. Use `check`.
 
 ---
 
-## 9. Using it as a gate
+## 10. Using it as a gate
 
 `pol check` exits 0 when it finds nothing and 1 when it does. That is all a CI
 step needs:
@@ -446,7 +545,7 @@ the next section.
 
 ---
 
-## 10. Adapting it to your own migration
+## 11. Adapting it to your own migration
 
 The model has four parts you would change. You do not need to understand the
 whole language to change them.
@@ -499,7 +598,7 @@ intentional.
 
 ---
 
-## 11. How the model is put together
+## 12. How the model is put together
 
 You can skip this section. It is here for readers who want to understand the
 model itself rather than use it.
@@ -534,10 +633,14 @@ releases ...".
 
 ---
 
-## 12. The files
+## 13. The files
 
 | file | what it is |
 | --- | --- |
+| `01-before.sql` | the table as it is today, with one representative row |
+| `02-expand.sql` | the expand step: the new column, nullable |
+| `02-expand-wrong.sql` | the same with `NOT NULL` — refused, and it says why |
+| `03-contract.sql` | the contract step: the old column dropped |
 | `db-migration-problem.pol` | the safe plan: columns, releases, steps, four rules |
 | `db-migration-problem-shortcut.pol` | the same, with one condition removed |
 | `db-migration-problem.claims` | the questions, and the acknowledgements |
@@ -555,7 +658,7 @@ anything used in both has to be somewhere both can load.
 
 ---
 
-## 13. Glossary
+## 14. Glossary
 
 **backfill** — copying values into a newly added column for rows that already
 existed. Adding a column does not do this; the column starts empty for every

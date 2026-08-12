@@ -411,7 +411,37 @@ db_migration_problem() {
   echo "   Q: is this migration plan safe at EVERY instant, including the ones"
   echo "      where a rolling deploy has two releases serving at once?"
 
-  echo "   1/3: the plan"
+  echo "   1/4: the DDL, read by \`pol sql\` — users generate SQL, not .pol"
+  tmp=$(mktemp -d)
+  for f in 01-before 02-expand 03-contract; do
+    "$POL" sql "$here/db-migration-problem/$f.sql" --with-data >"$tmp/$f.pol" 2>/dev/null
+  done
+  exp=$(cat "$tmp/02-expand.pol")
+  # The expand step's whole content is that the new column is NULLABLE, which
+  # `pol sql` writes as one character: `text?` rather than `text`.
+  has "db-migration-problem: the expand adds the column as NULLABLE" "$exp" "(text? full-name)"
+  has "db-migration-problem:    while the old column stays required" "$exp" "(text name)"
+  bef=$(cat "$tmp/01-before.pol")
+  lacks "db-migration-problem:    and before the expand it does not exist" "$bef" "full-name"
+  con=$(cat "$tmp/03-contract.pol")
+  lacks "db-migration-problem:    after the contract the old one is gone" "$con" "(text name)"
+  for f in 01-before 02-expand 03-contract; do
+    if (cd "$tmp" && "$POL" check "$f.pol" >/dev/null 2>&1); then
+      ok "db-migration-problem:    $f builds as a model"
+    else bad "db-migration-problem:    $f did not build"; fi
+  done
+  # The same expand with NOT NULL is not merely different, it is REFUSED: the
+  # representative row has no value for a column that did not exist yet.
+  "$POL" sql "$here/db-migration-problem/02-expand-wrong.sql" --with-data \
+    >"$tmp/wrong.pol" 2>/dev/null
+  wrong=$(cd "$tmp" && "$POL" check wrong.pol 2>&1)
+  wst=$?
+  printf '%s\n' "$wrong" | sed 's/^/     | /'
+  exit_is "db-migration-problem: NOT NULL on the new column is refused" "$wst" 2
+  has "db-migration-problem:    and it names the row that cannot exist" "$wrong" "users.full-name for u1"
+  rm -rf "$tmp"
+
+  echo "   2/4: the plan"
   mg=$("$POL" check "$here/db-migration-problem/db-migration-problem.pol" --claims "$here/db-migration-problem/db-migration-problem.claims" 2>&1)
   mst=$?
   printf '%s\n' "$mg" | sed 's/^/     | /'
@@ -423,7 +453,7 @@ db_migration_problem() {
   lacks "db-migration-problem:    no law is violated" "$mg" "violated in"
   lacks "db-migration-problem:    and every breakable law is acknowledged" "$mg" "unadmitted"
 
-  echo "   2/3: the shortcut — the same file, ONE conjunct lighter"
+  echo "   3/4: the shortcut — the same file, ONE conjunct lighter"
   sc=$("$POL" check "$here/db-migration-problem/db-migration-problem-shortcut.pol" --claims "$here/db-migration-problem/db-migration-problem.claims" 2>&1)
   sst=$?
   printf '%s\n' "$sc" | sed 's/^/     | /'
@@ -433,7 +463,7 @@ db_migration_problem() {
   has "db-migration-problem: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
   has "db-migration-problem:    and it never strands you either" "$sc" "holds  no-dead-ends"
 
-  echo "   3/3: the verb that does NOT catch it"
+  echo "   4/4: the verb that does NOT catch it"
   cm=$("$POL" compare "$here/db-migration-problem/db-migration-problem.pol" "$here/db-migration-problem/db-migration-problem-shortcut.pol" 2>&1)
   cst=$?
   printf '%s\n' "$cm" | sed 's/^/     | /'

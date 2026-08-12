@@ -406,9 +406,27 @@ two versions of the application are live at the same time, and both are serving
 real traffic.
 
 The usual answer is expand/contract — add the new column, run both for a while,
-remove the old one when nothing uses it. This scenario writes that plan down as
-a state machine and checks whether it is safe at *every* moment, including the
-moments mid-rollout when two versions disagree about what the table looks like.
+remove the old one when nothing uses it.
+
+**It starts from SQL, because that is what people write.** The three steps are
+three `.sql` files, and `pol sql` reads each one into a model. That alone
+catches the commonest way to get the expand step wrong: adding the new column
+as `NOT NULL`. The generated model differs by a single character — `text`
+rather than `text?` — and because each file also carries one representative
+row, the bad one is not merely different but **refused**, naming the user who
+already existed and cannot have a value for a column that did not:
+
+```console
+$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
+$ pol check wrong.pol
+pol: wrong.pol: value out of domain for cell users.full-name for u1
+```
+
+What the DDL cannot say is the *order* — when to run each step relative to
+each deploy, and what the code reads and writes meanwhile. That is written down
+by hand as a state machine, and checked for safety at *every* moment, including
+the moments mid-rollout when two versions disagree about what the table looks
+like.
 
 `pol check` on the good plan exits 0 and answers:
 
