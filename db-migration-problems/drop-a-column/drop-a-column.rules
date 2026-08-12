@@ -1,0 +1,20 @@
+; The same two questions, answered a second time by a different part of `pol`.
+;
+; This file is not a replacement for the claims file. `modality-cross-check.sh`
+; runs both and compares them; the two share no code, so a disagreement is a
+; bug in one of them rather than a number to adjust.
+;
+; POLARITY, which is easy to get backwards:
+;   `possible F` is the SATISFYING set — non-empty means the property holds.
+;   `live F` cannot be said positively, so it is the COUNTEREXAMPLE set: the
+;   situations from which F can no longer be reached. EMPTY means it holds.
+(load "ct.rules")
+
+; `settled` is spelled with two literals here rather than `(is prod.old prod.new)`,
+; because a rules guard compares a chain against a literal and not against a
+; second chain. It is the same set: the goal already pins `new` to r2.
+(satisfies completes
+  (and (is flag-col.state absent) (is prod.old r2) (is prod.new r2)))
+
+(can-reach can-still-finish completes)
+(trapped no-dead-ends can-still-finish)

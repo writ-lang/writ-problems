@@ -260,8 +260,8 @@ tells you which step causes a problem rather than just that one exists.
 
 Two files describe two plans:
 
-- `db-migration-problem.pol` — a plan that is safe.
-- `db-migration-problem-shortcut.pol` — the same plan with **one line
+- `rename-a-column.pol` — a plan that is safe.
+- `rename-a-column-shortcut.pol` — the same plan with **one line
   changed**. It looks fine. It is not.
 
 Both are asked exactly the same questions, from the same file. That is
@@ -289,13 +289,13 @@ $ pol check wrong.pol            # refused: exit 2
 Then the sequence:
 
 ```console
-$ pol check db-migration-problem.pol --claims db-migration-problem.claims
+$ pol check rename-a-column.pol --claims rename-a-column.claims
 ```
 
 That checks the safe plan. To check the unsafe one:
 
 ```console
-$ pol check db-migration-problem-shortcut.pol --claims db-migration-problem.claims
+$ pol check rename-a-column-shortcut.pol --claims rename-a-column.claims
 ```
 
 Note that the second command uses the *same* questions file as the first.
@@ -422,7 +422,7 @@ one. A plan can have a working path and still have a trap next to it.
 
 ## 8. The unsafe plan
 
-`db-migration-problem-shortcut.pol` is the same file with one condition
+`rename-a-column-shortcut.pol` is the same file with one condition
 deleted. In the safe plan, the step that deploys the reader has this condition:
 
 ```lisp
@@ -504,7 +504,7 @@ dangerous plan is not the one that looks dangerous.
 exactly what you would want here:
 
 ```console
-$ pol compare db-migration-problem.pol db-migration-problem-shortcut.pol
+$ pol compare rename-a-column.pol rename-a-column-shortcut.pol
 equations:   read-of-existing           preserved
              write-of-existing          preserved
              read-of-filled             preserved
@@ -534,7 +534,7 @@ will go green on a plan that breaks production. Use `check`.
 step needs:
 
 ```sh
-pol check db-migration-problem.pol --claims db-migration-problem.claims
+pol check rename-a-column.pol --claims rename-a-column.claims
 ```
 
 If the exit code is 1, the build fails, and the output already names the rule,
@@ -641,11 +641,11 @@ releases ...".
 | `02-expand.sql` | the expand step: the new column, nullable |
 | `02-expand-wrong.sql` | the same with `NOT NULL` — refused, and it says why |
 | `03-contract.sql` | the contract step: the old column dropped |
-| `db-migration-problem.pol` | the safe plan: columns, releases, steps, four rules |
-| `db-migration-problem-shortcut.pol` | the same, with one condition removed |
-| `db-migration-problem.claims` | the questions, and the acknowledgements |
-| `db-migration-problem.lib.pol` | shared definitions, loaded by both of the above |
-| `db-migration-problem.rules` | the same two questions written a second way |
+| `rename-a-column.pol` | the safe plan: columns, releases, steps, four rules |
+| `rename-a-column-shortcut.pol` | the same, with one condition removed |
+| `rename-a-column.claims` | the questions, and the acknowledgements |
+| `rename-a-column.lib.pol` | shared definitions, loaded by both of the above |
+| `rename-a-column.rules` | the same two questions written a second way |
 
 The last file exists as a cross-check. The two questions are answered twice, by
 two different parts of `pol` that share no code. If the two answers ever

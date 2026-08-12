@@ -1,7 +1,7 @@
 ; The questions, kept apart from the plan — and put to BOTH plans, so the
 ; difference in the verdicts is attributable to the runbook and nothing else.
 
-(load "db-migration-problem.lib.pol")
+(load "rename-a-column.lib.pol")
 
 (property completes
   "the rename can be finished: old column gone, fleet settled on the release that neither reads nor writes it"

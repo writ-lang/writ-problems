@@ -1,0 +1,24 @@
+; The questions, put to BOTH plans, so any difference in the answers comes from
+; the plan and from nothing else.
+
+(load "drop-a-column.lib.pol")
+
+(property completes
+  "the column can be dropped, with the fleet settled on the release that does not use it"
+  (possible dropped))
+
+(property no-dead-ends
+  "from every situation reachable, the drop can still be completed"
+  (live dropped))
+
+; ---- ownership ----
+; A rule that some step could break has to be acknowledged, or `pol` reports it
+; unadmitted. Both steps that move the fleet can affect both rules, and so can
+; the drop itself; saying so here is the operator confirming they looked.
+(accept deploy-r2   read-of-existing)
+(accept settle      read-of-existing)
+(accept drop-column read-of-existing)
+
+(accept deploy-r2   write-of-existing)
+(accept settle      write-of-existing)
+(accept drop-column write-of-existing)

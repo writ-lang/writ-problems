@@ -381,14 +381,14 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The ten scenarios this script walks by convention, and their 22 properties.
+  # The twelve scenarios this script walks by convention, and their 26 properties.
   # `calculation/` and `gotha/` are not among them: each carries its own
   # explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the ten fails this line, which is the point of it — the
-  # count went 20 -> 22 when `db-migration-problem/` joined, and this line is where that
-  # had to be said out loud.
-  has "cross-check: all 22 properties of the ten scenarios were considered" \
-    "$out" "considered 22 properties"
+  # property to any of the twelve fails this line, which is the point of it —
+  # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
+  # and this line is where each of those had to be said out loud.
+  has "cross-check: all 26 properties of the twelve scenarios were considered" \
+    "$out" "considered 26 properties"
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
   has "cross-check: B. a live is its COUNTEREXAMPLE set — empty holds" \
@@ -406,7 +406,7 @@ crosscheck() {
     "arch/rerun-is-affordable  never: counterexample set of 88"
 }
 
-db_migration_problem() {
+rename_a_column() {
   echo "== Expand/contract — renaming a column under a live service =="
   echo "   Q: is this migration plan safe at EVERY instant, including the ones"
   echo "      where a rolling deploy has two releases serving at once?"
@@ -414,70 +414,129 @@ db_migration_problem() {
   echo "   1/4: the DDL, read by \`pol sql\` — users generate SQL, not .pol"
   tmp=$(mktemp -d)
   for f in 01-before 02-expand 03-contract; do
-    "$POL" sql "$here/db-migration-problem/$f.sql" --with-data >"$tmp/$f.pol" 2>/dev/null
+    "$POL" sql "$here/db-migration-problems/rename-a-column/$f.sql" --with-data >"$tmp/$f.pol" 2>/dev/null
   done
   exp=$(cat "$tmp/02-expand.pol")
   # The expand step's whole content is that the new column is NULLABLE, which
   # `pol sql` writes as one character: `text?` rather than `text`.
-  has "db-migration-problem: the expand adds the column as NULLABLE" "$exp" "(text? full-name)"
-  has "db-migration-problem:    while the old column stays required" "$exp" "(text name)"
+  has "rename-a-column: the expand adds the column as NULLABLE" "$exp" "(text? full-name)"
+  has "rename-a-column:    while the old column stays required" "$exp" "(text name)"
   bef=$(cat "$tmp/01-before.pol")
-  lacks "db-migration-problem:    and before the expand it does not exist" "$bef" "full-name"
+  lacks "rename-a-column:    and before the expand it does not exist" "$bef" "full-name"
   con=$(cat "$tmp/03-contract.pol")
-  lacks "db-migration-problem:    after the contract the old one is gone" "$con" "(text name)"
+  lacks "rename-a-column:    after the contract the old one is gone" "$con" "(text name)"
   for f in 01-before 02-expand 03-contract; do
     if (cd "$tmp" && "$POL" check "$f.pol" >/dev/null 2>&1); then
-      ok "db-migration-problem:    $f builds as a model"
-    else bad "db-migration-problem:    $f did not build"; fi
+      ok "rename-a-column:    $f builds as a model"
+    else bad "rename-a-column:    $f did not build"; fi
   done
   # The same expand with NOT NULL is not merely different, it is REFUSED: the
   # representative row has no value for a column that did not exist yet.
-  "$POL" sql "$here/db-migration-problem/02-expand-wrong.sql" --with-data \
+  "$POL" sql "$here/db-migration-problems/rename-a-column/02-expand-wrong.sql" --with-data \
     >"$tmp/wrong.pol" 2>/dev/null
   wrong=$(cd "$tmp" && "$POL" check wrong.pol 2>&1)
   wst=$?
   printf '%s\n' "$wrong" | sed 's/^/     | /'
-  exit_is "db-migration-problem: NOT NULL on the new column is refused" "$wst" 2
-  has "db-migration-problem:    and it names the row that cannot exist" "$wrong" "users.full-name for u1"
+  exit_is "rename-a-column: NOT NULL on the new column is refused" "$wst" 2
+  has "rename-a-column:    and it names the row that cannot exist" "$wrong" "users.full-name for u1"
   rm -rf "$tmp"
 
   echo "   2/4: the plan"
-  mg=$("$POL" check "$here/db-migration-problem/db-migration-problem.pol" --claims "$here/db-migration-problem/db-migration-problem.claims" 2>&1)
+  mg=$("$POL" check "$here/db-migration-problems/rename-a-column/rename-a-column.pol" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
   mst=$?
   printf '%s\n' "$mg" | sed 's/^/     | /'
-  exit_is "db-migration-problem: the plan is clean" "$mst" 0
-  has "db-migration-problem: A. the rename can be finished" "$mg" "holds  completes"
-  near "db-migration-problem:    and pol prints the runbook, which nobody wrote" "$mg" "holds  completes" "add-column"
-  near "db-migration-problem:    the backfill comes before the readers switch" "$mg" "holds  completes" "backfill"
-  has "db-migration-problem: B. and no step strands production half-migrated" "$mg" "holds  no-dead-ends"
-  lacks "db-migration-problem:    no law is violated" "$mg" "violated in"
-  lacks "db-migration-problem:    and every breakable law is acknowledged" "$mg" "unadmitted"
+  exit_is "rename-a-column: the plan is clean" "$mst" 0
+  has "rename-a-column: A. the rename can be finished" "$mg" "holds  completes"
+  near "rename-a-column:    and pol prints the runbook, which nobody wrote" "$mg" "holds  completes" "add-column"
+  near "rename-a-column:    the backfill comes before the readers switch" "$mg" "holds  completes" "backfill"
+  has "rename-a-column: B. and no step strands production half-migrated" "$mg" "holds  no-dead-ends"
+  lacks "rename-a-column:    no law is violated" "$mg" "violated in"
+  lacks "rename-a-column:    and every breakable law is acknowledged" "$mg" "unadmitted"
 
   echo "   3/4: the shortcut — the same file, ONE conjunct lighter"
-  sc=$("$POL" check "$here/db-migration-problem/db-migration-problem-shortcut.pol" --claims "$here/db-migration-problem/db-migration-problem.claims" 2>&1)
+  sc=$("$POL" check "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.pol" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
   sst=$?
   printf '%s\n' "$sc" | sed 's/^/     | /'
-  exit_is "db-migration-problem: the shortcut reports findings" "$sst" 1
-  has "db-migration-problem: C. a reader goes out before the backfill" "$sc" "violated in 5 reachable situations"
-  near "db-migration-problem:    and pol names the step that does it" "$sc" "violated in 5 reachable situations" "deploy-r3"
-  has "db-migration-problem: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
-  has "db-migration-problem:    and it never strands you either" "$sc" "holds  no-dead-ends"
+  exit_is "rename-a-column: the shortcut reports findings" "$sst" 1
+  has "rename-a-column: C. a reader goes out before the backfill" "$sc" "violated in 5 reachable situations"
+  near "rename-a-column:    and pol names the step that does it" "$sc" "violated in 5 reachable situations" "deploy-r3"
+  has "rename-a-column: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
+  has "rename-a-column:    and it never strands you either" "$sc" "holds  no-dead-ends"
 
   echo "   4/4: the verb that does NOT catch it"
-  cm=$("$POL" compare "$here/db-migration-problem/db-migration-problem.pol" "$here/db-migration-problem/db-migration-problem-shortcut.pol" 2>&1)
+  cm=$("$POL" compare "$here/db-migration-problems/rename-a-column/rename-a-column.pol" "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.pol" 2>&1)
   cst=$?
   printf '%s\n' "$cm" | sed 's/^/     | /'
-  exit_is "db-migration-problem: compare is content" "$cst" 0
-  has "db-migration-problem: E. compare says the guarantees survived" "$cm" "preserved"
-  lacks "db-migration-problem:    nothing is reported LOST" "$cm" "LOST"
+  exit_is "rename-a-column: compare is content" "$cst" 0
+  has "rename-a-column: E. compare says the guarantees survived" "$cm" "preserved"
+  lacks "rename-a-column:    nothing is reported LOST" "$cm" "LOST"
   echo "      — the shortcut declares the same laws and keeps the same"
   echo "        properties; what it loses is that one law it declares is now"
   echo "        VIOLATED. So the gate is \`check\`, not \`compare\`."
 }
 
+drop_a_column() {
+  d="$here/db-migration-problems/drop-a-column"
+  echo "== Dropping a column that is still being read =="
+  echo "   Q: how many moves from a normal-looking plan to an outage?"
+  ok_=$("$POL" check "$d/drop-a-column.pol" --claims "$d/drop-a-column.claims" 2>&1)
+  ost=$?
+  printf '%s\n' "$ok_" | sed 's/^/     | /'
+  exit_is "drop-a-column: the plan is clean" "$ost" 0
+  has "drop-a-column: A. the column can be dropped" "$ok_" "holds  completes"
+  near "drop-a-column:    and the rollout finishes BEFORE the drop" "$ok_" "holds  completes" "settle"
+  has "drop-a-column: B. and no step strands you" "$ok_" "holds  no-dead-ends"
+  lacks "drop-a-column:    nothing is violated" "$ok_" "violated in"
+
+  sc=$("$POL" check "$d/drop-a-column-shortcut.pol" --claims "$d/drop-a-column.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "drop-a-column: dropping mid-rollout is refused" "$sst" 1
+  has "drop-a-column: C. the old release reads a column that is gone" "$sc" "violated in 1 reachable situations"
+  near "drop-a-column:    two moves to the fault" "$sc" "violated in 1 reachable situations" "deploy-r2"
+  has "drop-a-column: D. and its writes break too" "$sc" "equation write-of-existing"
+  has "drop-a-column: E. yet it still finishes, and never strands you" "$sc" "holds  no-dead-ends"
+}
+
+add_a_required_column() {
+  d="$here/db-migration-problems/add-a-required-column"
+  echo "== Making a column required, before the code can keep the promise =="
+  echo "   Q: NOT NULL is a promise about rows that do not exist yet — who checks it?"
+  tmp=$(mktemp -d)
+  "$POL" sql "$d/02-add-nullable.sql" --with-data >"$tmp/step2.pol" 2>/dev/null
+  has "add-a-required-column: the column arrives NULLABLE" "$(cat "$tmp/step2.pol")" "(text? country)"
+  rm -rf "$tmp"
+
+  ok_=$("$POL" check "$d/add-a-required-column.pol" --claims "$d/add-a-required-column.claims" 2>&1)
+  ost=$?
+  printf '%s\n' "$ok_" | sed 's/^/     | /'
+  exit_is "add-a-required-column: the plan is clean" "$ost" 0
+  has "add-a-required-column: A. the column can end up required" "$ok_" "holds  completes"
+  near "add-a-required-column:    the deploy comes BEFORE the backfill" "$ok_" "holds  completes" "deploy-r2"
+  has "add-a-required-column: B. and no step strands you" "$ok_" "holds  no-dead-ends"
+  lacks "add-a-required-column:    nothing is violated" "$ok_" "violated in"
+
+  sc=$("$POL" check "$d/add-a-required-column-shortcut.pol" --claims "$d/add-a-required-column.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "add-a-required-column: constraining before deploying is refused" "$sst" 1
+  has "add-a-required-column: C. a live release does not write the column" "$sc" "violated in 2 reachable situations"
+  near "add-a-required-column:    three moves, and no deploy among them" "$sc" "violated in 2 reachable situations" "backfill"
+  has "add-a-required-column: D. yet it still finishes — faster" "$sc" "holds  completes"
+  # Exactly ONE rule breaks. The database's own check (`required-needs-data`)
+  # is still satisfied, which is the whole reason the mistake is easy: the half
+  # you get reminded about is the half that was fine.
+  nviol=$(printf '%s\n' "$sc" | grep -c "violated in")
+  if [ "$nviol" = "1" ]; then
+    ok "add-a-required-column: E. and only ONE rule breaks — the unchecked half"
+  else
+    bad "add-a-required-column: E. expected exactly one violated rule, got $nviol"
+  fi
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable db_migration_problem control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

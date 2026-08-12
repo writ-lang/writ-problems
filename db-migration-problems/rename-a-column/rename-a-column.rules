@@ -1,6 +1,6 @@
 ; The migration's two claims, re-asked as derivations (extension §2).
 ;
-; Checked AGAINST db-migration-problem.claims rather than replacing it: `pol check` answers
+; Checked AGAINST rename-a-column.claims rather than replacing it: `pol check` answers
 ; `completes` and `no-dead-ends` with the checker's CTL reading, and
 ; modality-cross-check.sh re-asks the same two questions of the rules engine.
 ; Two implementations of one question; a disagreement is a bug in one of them.
@@ -16,7 +16,7 @@
 (load "ct.rules")
 
 ; The goal guard is written out longhand rather than reusing `contracted` from
-; db-migration-problem.lib.pol, and the reason is the file type: that library loads
+; rename-a-column.lib.pol, and the reason is the file type: that library loads
 ; stdlib.pol, whose §3 and §7 SCHEMAS are declarations a rules file has no
 ; place for. river.rules writes its guard out for the same reason. The cost is
 ; one duplicated conjunction, and the cross-check is what keeps the copy

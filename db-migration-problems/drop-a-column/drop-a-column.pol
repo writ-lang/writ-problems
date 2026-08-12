@@ -1,0 +1,92 @@
+; Dropping a column that is no longer needed — and the one thing that makes it
+; go wrong.
+;
+; This is the smallest of these problems. There is no backfill, no new column,
+; no data to copy. You stop using the column, you deploy that, and then you
+; drop it. Three steps.
+;
+; The trap is entirely in the word "then". A rolling deploy is not instant: for
+; as long as it takes, the release that still reads the column is live
+; alongside the one that does not. Drop the column in that window and the old
+; release is reading something that is no longer there.
+;
+; It is worth having as its own problem because the mistake does not feel like
+; a mistake. The code that used the column is merged, reviewed and deployed.
+; Dropping the column is the obvious next thing to do, and there is nothing on
+; screen to tell you the deploy has not finished.
+
+(load "stdlib.pol")
+(load "drop-a-column.lib.pol")
+
+(schema drop-a-column
+
+  ; A column either exists or it does not. Nothing else about it matters here.
+  (type presence (absent present))
+  (type column (arrow state (to presence)))
+
+  ; Two releases: the one that uses the column, and the one that does not.
+  (type release (r1 r2))
+
+  ; What each release does with each column — a relation, and `fixed`, because
+  ; a release's behaviour is wiring rather than state.
+  (type reads
+    (arrow by  (to release) fixed)
+    (arrow col (to column)  fixed))
+  (type writes
+    (arrow by  (to release) fixed)
+    (arrow col (to column)  fixed))
+
+  ; The fleet. While `old` and `new` differ, a rollout is in progress and BOTH
+  ; are serving traffic. That window is the whole problem.
+  (type fleet
+    (arrow old (to release))
+    (arrow new (to release)))
+
+  ; Two rules, and they are the obvious two. Each ranges over `fleet`, reaching
+  ; the read/write sets through `some`, because a rule ranges over one kind of
+  ; thing and its paths are written from that kind rather than from a named
+  ; item.
+
+  (equation read-of-existing
+    (not (some (R reads)
+           (and (or (is R.by fleet.old) (is R.by fleet.new))
+                (is R.col.state absent)))))
+
+  (equation write-of-existing
+    (not (some (W writes)
+           (and (or (is W.by fleet.old) (is W.by fleet.new))
+                (is W.col.state absent))))))
+
+(instance start drop-a-column
+
+  (column flag-col (state present))
+
+  ; r1 uses the column. r2 is the release that stopped.
+  (reads  rd1 (by r1) (col flag-col))
+  (writes wr1 (by r1) (col flag-col))
+
+  ; r2 appears in neither list, which is the point of it.
+
+  (fleet prod (old r1) (new r1)))
+
+(use drop-a-column)
+(initial start)
+
+; ---- the runbook ----
+
+; Start rolling out the release that no longer touches the column.
+(transition deploy-r2
+  (when (and settled (is prod.new r1)))
+  (do (set prod.new r2)))
+
+; The rollout finishes and the old release drains away.
+(transition settle
+  (when rolling)
+  (do (set prod.old prod.new)))
+
+; Drop the column. `settled` is the entire safety condition: it says the
+; rollout has FINISHED, not merely started. Delete that one word and you have
+; the sibling file.
+(transition drop-column
+  (when (and settled (is prod.new r2) (is flag-col.state present)))
+  (do (set flag-col.state absent)))

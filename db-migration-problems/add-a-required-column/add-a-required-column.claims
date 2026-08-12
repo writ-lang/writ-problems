@@ -1,0 +1,23 @@
+; The questions, put to both plans.
+
+(load "add-a-required-column.lib.pol")
+
+(property completes
+  "the column can end up existing, filled in, and required"
+  (possible enforced))
+
+(property no-dead-ends
+  "from every reachable situation, that end can still be reached"
+  (live enforced))
+
+; ---- ownership ----
+(accept add-column  write-of-existing)
+(accept deploy-r2   write-of-existing)
+(accept settle      write-of-existing)
+
+(accept backfill    required-needs-data)
+(accept require     required-needs-data)
+
+(accept deploy-r2   required-needs-every-writer)
+(accept settle      required-needs-every-writer)
+(accept require     required-needs-every-writer)

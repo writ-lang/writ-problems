@@ -1,20 +1,27 @@
-; The same migration, with ONE CONJUNCT REMOVED — and that is the whole file.
+; Expand/contract, as a state machine — and `pol` as the gate on it.
 ;
-; This is db-migration-problem.pol with `(is full-col.filled yes)` struck from
-; `deploy-r3`'s guard: the release that starts READING the new column is
-; allowed out before the backfill has finished. It is the tempting shortcut,
-; because at that moment the column exists, every live release writes it, and
-; a staging database — whose rows were all written after the column arrived —
-; looks perfectly fine.
+; THE PROBLEM. Renaming a column under a live service cannot be one step: the
+; database and the code deploy separately, and a rolling deploy runs TWO
+; releases at once. So the rename becomes a sequence — add the new column,
+; teach the code to write both, backfill, switch the readers, stop writing the
+; old one, drop it — and the question is whether the sequence is safe at every
+; instant, including the instants when two releases are live together.
 ;
-; The questions are the ones next door, unchanged. Holding them fixed is the
-; point of the pair: the difference in the verdicts is attributable to this one
-; conjunct and to nothing else.
+; That is a question about a state space, not about a diff, which is why it is
+; worth exhausting rather than reviewing. A reviewer checks the steps; `pol`
+; checks every situation the steps can produce, including the interleavings
+; nobody wrote down.
 ;
-; `pol check` exits 1 on this file. That is the gate refusing the merge.
+; WHAT IS A MOVE AND WHAT IS A LAW. The moves are the operator's — the DDL and
+; the deploys, each guarded by the RUNBOOK this plan proposes. The laws are the
+; compatibility rules, and they are not guards: a law is a claim the world is
+; measured against, so `pol check` reports not merely that a rule is violated
+; but WHICH move can break it. That is the gate's output. A plan whose runbook
+; is right leaves every law unbreakable and exits 0; the sibling file
+; rename-a-column-shortcut.pol drops one conjunct from one guard and exits 1.
 
 (load "stdlib.pol")
-(load "db-migration-problem.lib.pol")
+(load "rename-a-column.lib.pol")
 
 (schema migration
 
@@ -148,10 +155,10 @@
   (when (and settled (is prod.new r1) (is full-col.state present)))
   (do (set prod.new r2)))
 
-; r3 is the first release to READ the new column. In db-migration-problem.pol it waits for
-; the backfill; here it does not.
+; r3 is the first release to READ the new column, so it may not go out until
+; the backfill has finished. Removing this one conjunct is the shortcut.
 (transition deploy-r3
-  (when (and settled (is prod.new r2)))          ; <- the backfill check, gone
+  (when (and settled (is prod.new r2) (is full-col.filled yes)))
   (do (set prod.new r3)))
 
 ; r4 stops writing the old column, so it may not go out while anything still

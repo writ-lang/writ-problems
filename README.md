@@ -37,7 +37,7 @@ week a CP-SAT solver decided — and asked whether it is any good. Its schema is
 `fixed` throughout, so the space is one situation and the whole run is spent on
 the questions.
 
-The seventh is the only one whose subject is a **change**: `db-migration-problem/` gates
+The seventh is the only one whose subject is a **change**: `db-migration-problems/rename-a-column/` gates
 an expand/contract column rename, proving a deploy plan safe at every instant —
 including the instants when a rolling deploy has two releases serving at once —
 and refusing the plan that reads before it backfills.
@@ -397,65 +397,51 @@ bijection — exact counting with no arithmetic anywhere. See
 
 ## Gating a change before it ships
 
-### 12. Renaming a database column safely — `db-migration-problem/`
+### 12. Database migrations, gated — `db-migration-problems/`
 
-You cannot rename a column on a running service in one step. The database and
-the application deploy separately, so there is always a gap where one of them
-is out of step with the other. Worse, most deploys are rolling: for a minute,
-two versions of the application are live at the same time, and both are serving
-real traffic.
+Three schema changes that look routine, each with a plan that reads correctly
+and goes wrong anyway. Each directory holds its own page, written for someone
+who has not used `pol`.
 
-The usual answer is expand/contract — add the new column, run both for a while,
-remove the old one when nothing uses it.
+| problem | the mistake | how far in |
+| --- | --- | --- |
+| `drop-a-column/` | dropping a column while a release that still reads it is live | 2 moves |
+| `add-a-required-column/` | adding `NOT NULL` before the code that supplies a value ships | 3 moves |
+| `rename-a-column/` | switching readers to the new column before the backfill finishes | 4 moves |
 
-**It starts from SQL, because that is what people write.** The three steps are
-three `.sql` files, and `pol sql` reads each one into a model. That alone
-catches the commonest way to get the expand step wrong: adding the new column
-as `NOT NULL`. The generated model differs by a single character — `text`
-rather than `text?` — and because each file also carries one representative
-row, the bad one is not merely different but **refused**, naming the user who
-already existed and cannot have a value for a column that did not:
+**They start from SQL, because that is what people write.** Each step of each
+migration is a `.sql` file, read by `pol sql`. That alone catches one mistake:
+adding the new column as `NOT NULL` during an expand. The good and bad DDL
+differ by a single character in the generated model — `text?` against `text` —
+and because each file also carries a row that predates the column, the bad one
+is not merely different but refused, naming the row that cannot exist.
 
-```console
-$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
-$ pol check wrong.pol
-pol: wrong.pol: value out of domain for cell users.full-name for u1
-```
+What the DDL cannot say is the *order*: when to run each step relative to each
+deploy, and what the code reads and writes meanwhile. That is written down as a
+state machine and checked at every moment, including the moments mid-rollout
+when two releases are live together and disagree about the table.
 
-What the DDL cannot say is the *order* — when to run each step relative to
-each deploy, and what the code reads and writes meanwhile. That is written down
-by hand as a state machine, and checked for safety at *every* moment, including
-the moments mid-rollout when two versions disagree about what the table looks
-like.
+Each problem is a pair — a safe plan, and the same file with one word, one
+conjunct or one condition removed — asked the same questions, so any difference
+in the answers comes from that change alone. The safe plan exits 0 and prints
+its runbook as the witness. The shortcut exits 1, names the rule, counts the
+broken situations and prints the shortest route to one.
 
-`pol check` on the good plan exits 0 and answers:
+Three things hold across all three, and they are the reason the exercise is
+worth doing:
 
-- **`holds completes`** — the rename can be finished, and the nine steps it
-  prints are the runbook. Nobody wrote them in that order; `pol` searched for a
-  way to reach the end and printed the route it found.
-- **`holds no-dead-ends`** — from every situation you could be in, the rename
-  can still be finished. There is no move that paints you into a corner.
+- **The unsafe plan is always faster** — two steps against three, three against
+  five, eight against nine. The removed condition is always a *wait*.
+- **The unsafe plan still finishes**, and never strands you. Every question
+  except "is it safe on the way" answers in its favour.
+- **The mistake is never in a file.** In two of the three, every SQL file and
+  every release is individually correct; what is wrong is the order.
 
-`db-migration-problem-shortcut.pol` is the same file with **one condition
-removed**: the version that starts *reading* the new column no longer waits for
-the backfill to finish. The same questions are put to both files, so any
-difference in the answers comes from that one condition.
-
-It fails, and exits 1: reading before the backfill is broken in 5 reachable
-situations, reached in four moves, with `deploy-r3` named as the step that does
-it. The reason it is worth catching automatically is that it looks fine. Every
-row in a staging database was written after the column was added, so every row
-in staging has a value. Only production has rows that predate it.
-
-And it still finishes — in **eight** steps rather than nine. The unsafe plan is
-genuinely faster. That is the general shape of the problem: the dangerous plan
-is not the one that looks dangerous.
-
-One warning recorded there for anyone wiring this into CI: `pol compare` of the
-two plans reports everything preserved and exits 0. It is answering a different
-question — "which guarantees did this version give up?" — and the shortcut gave
-none up. It still declares the same rules; it just breaks one of them. Use
-`check`.
+One warning recorded there for anyone wiring this into CI: `pol compare` of a
+safe plan against its shortcut reports everything preserved and exits 0. It
+answers a different question — "which guarantees did this version give up?" —
+and the shortcut gave none up. It still declares the same rules; it just breaks
+one. Use `check`.
 
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 

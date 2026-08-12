@@ -32,7 +32,7 @@ set -u
 here=$(cd "$(dirname "$0")" && pwd)
 POL=${POL:-pol}
 
-scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch db-migration-problem"
+scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column"
 
 considered=0
 compared=0
@@ -89,9 +89,13 @@ verdict() { # check-output  name
 }
 
 for s in $scenarios; do
-  model="$here/$s/$s.pol"
-  claims="$here/$s/$s.claims"
-  rules="$here/$s/$s.rules"
+  # A scenario may sit in a subdirectory — `db-migration-problems/rename-a-column`
+  # — in which case the files are named after the LAST segment, not the whole
+  # path. `basename` covers both shapes with no special case.
+  b=$(basename "$s")
+  model="$here/$s/$b.pol"
+  claims="$here/$s/$b.claims"
+  rules="$here/$s/$b.rules"
   echo "== $s =="
   if [ ! -f "$rules" ]; then
     no "$s: no $s.rules beside the scenario — nothing to cross-check against"

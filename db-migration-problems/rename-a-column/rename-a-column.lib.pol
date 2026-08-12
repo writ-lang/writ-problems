@@ -1,5 +1,5 @@
 (load "stdlib.pol")
-; db-migration-problem.lib.pol — the vocabulary shared by the models and their questions.
+; rename-a-column.lib.pol — the vocabulary shared by the models and their questions.
 ;
 ; It is a file of its own because a .claims file has its own form scope and
 ; there is no implicit prelude: a form used in both a model and its questions
