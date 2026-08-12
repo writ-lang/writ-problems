@@ -1,0 +1,35 @@
+; The migration's two claims, re-asked as derivations (extension §2).
+;
+; Checked AGAINST migration.claims rather than replacing it: `pol check` answers
+; `completes` and `no-dead-ends` with the checker's CTL reading, and
+; modality-cross-check.sh re-asks the same two questions of the rules engine.
+; Two implementations of one question; a disagreement is a bug in one of them.
+;
+; POLARITY — read this before "fixing" anything below.
+;   `possible F` is encoded POSITIVELY: the relation holds the reachable
+;   situations satisfying F, so NON-EMPTY means the property holds.
+;   `live F` is AG EF F, which no stratified Datalog relation can say
+;   positively, so it is encoded as its COUNTEREXAMPLE SET — the reachable
+;   situations from which no F-situation is reachable. EMPTY means it holds.
+;   Encoding `no-dead-ends` as "the situations that can still finish" would
+;   read as the satisfying set and silently invert the oracle.
+(load "ct.rules")
+
+; The goal guard is written out longhand rather than reusing `contracted` from
+; migration.lib.pol, and the reason is the file type: that library loads
+; stdlib.pol, whose §3 and §7 SCHEMAS are declarations a rules file has no
+; place for. river.rules writes its guard out for the same reason. The cost is
+; one duplicated conjunction, and the cross-check is what keeps the copy
+; honest — if this drifts from the claims file, the two engines disagree and
+; the script goes red.
+; `settled` is spelled with two LITERALS here — `(is prod.old r4)` rather than
+; `(is prod.old prod.new)` — because a rules guard compares a chain against a
+; literal, not against a second chain. It denotes the same set: the goal already
+; pins `new` to r4, so "old equals new" and "old is r4" agree exactly here.
+(satisfies completes
+  (and (is name-col.state absent) (is prod.old r4) (is prod.new r4)))
+
+; `live contracted`, as its complement: the situations from which the rename
+; can no longer be finished. Empty ⟺ `holds no-dead-ends`.
+(can-reach can-still-finish completes)
+(trapped no-dead-ends can-still-finish)

@@ -1,0 +1,47 @@
+; The questions, kept apart from the plan — and put to BOTH plans, so the
+; difference in the verdicts is attributable to the runbook and nothing else.
+
+(load "migration.lib.pol")
+
+(property completes
+  "the rename can be finished: old column gone, fleet settled on the release that neither reads nor writes it"
+  (possible contracted))
+
+(property no-dead-ends
+  "from every reachable situation the rename can still be finished — no step strands production half-migrated"
+  (live contracted))
+
+; ---- ownership ----
+; A law that some move could break must be acknowledged, or `pol` reports it
+; unadmitted (§16.3). The list below is long, and its length is the argument
+; for this whole exercise: `settle` and every `deploy-*` write the fleet
+; arrows that all four rules range over, so ALMOST EVERY STEP OF A MIGRATION
+; CAN, IN PRINCIPLE, BREAK ALMOST EVERY COMPATIBILITY RULE. That is why a
+; runbook is reviewed badly and exhausted well — and acknowledging them here
+; is the operator saying which of those possibilities the plan has thought
+; about, rather than the tool guessing.
+
+(accept add-column   read-of-existing)
+(accept deploy-r2    read-of-existing)
+(accept deploy-r3    read-of-existing)
+(accept deploy-r4    read-of-existing)
+(accept settle       read-of-existing)
+(accept drop-column  read-of-existing)
+
+(accept add-column   write-of-existing)
+(accept deploy-r2    write-of-existing)
+(accept deploy-r3    write-of-existing)
+(accept deploy-r4    write-of-existing)
+(accept settle       write-of-existing)
+(accept drop-column  write-of-existing)
+
+(accept backfill     read-of-filled)
+(accept deploy-r2    read-of-filled)
+(accept deploy-r3    read-of-filled)
+(accept deploy-r4    read-of-filled)
+(accept settle       read-of-filled)
+
+(accept deploy-r2    read-implies-every-writer)
+(accept deploy-r3    read-implies-every-writer)
+(accept deploy-r4    read-implies-every-writer)
+(accept settle       read-implies-every-writer)

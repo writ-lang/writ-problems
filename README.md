@@ -37,6 +37,11 @@ week a CP-SAT solver decided — and asked whether it is any good. Its schema is
 `fixed` throughout, so the space is one situation and the whole run is spent on
 the questions.
 
+The seventh is the only one whose subject is a **change**: `migration/` gates
+an expand/contract column rename, proving a deploy plan safe at every instant —
+including the instants when a rolling deploy has two releases serving at once —
+and refusing the plan that reads before it backfills.
+
 The fifth is the smallest file here and the only one whose subject is a
 **claim**. `gotha/` states a proposition that forbids something, in Popper's
 sense, and asks `pol` for a situation it forbids. There is one, three moves
@@ -390,19 +395,61 @@ entities told apart by an `ordinal`, and three properties make lesson↔demand a
 bijection — exact counting with no arithmetic anywhere. See
 [`timetable/README.md`](timetable/README.md).
 
+## Gating a change before it ships
+
+### 12. Expand/contract, gated — `migration/`
+
+Renaming a column under a live service, as a state machine. A rename cannot be
+one step: the database and the code deploy separately, and a rolling deploy
+runs **two releases at once**, so the rename becomes a sequence and the
+question is whether it is safe at every instant — including the instants when
+two releases are serving together. That is a question about a state space
+rather than a diff, which is why it is worth exhausting: a reviewer checks the
+steps, `pol` checks every situation the steps can produce.
+
+The moves are the operator's (the DDL and the deploys) and their guards **are**
+the runbook. The four laws are the compatibility rules, and they are laws
+rather than guards on purpose — a law is measured against, so `pol check`
+reports not merely that a rule broke but **which move can break it**.
+
+`pol check migration.pol --claims migration.claims` answers:
+- **`holds completes`** — the rename can be finished, **and the witness is the
+  runbook**: nine steps in an order nobody wrote down, printed as the evidence.
+- **`holds no-dead-ends`** — from every reachable situation it can still be
+  finished; no step strands production half-migrated. The river's
+  `no-blunders`, asked of a deploy.
+- **exit 0** — the gate passes.
+
+`migration-shortcut.pol` is the same file with **one conjunct removed**: the
+release that starts *reading* the new column no longer waits for the backfill.
+The same claims file is put to both, so the difference in the verdicts is
+attributable to that conjunct and nothing else. It **fails** — `read-of-filled`
+violated in 5 reachable situations, `deploy-r3` named as the step, four moves
+in — and exits 1. Note it still `holds completes`, in **eight** steps rather
+than nine: the unsafe plan is genuinely faster, which is why it is tempting and
+why "it passed in staging" is not evidence.
+
+And one instrument that does *not* catch it: `pol compare` of the two plans
+reports every law and property **preserved**, exit 0 — correctly, since the
+shortcut declares the same laws and keeps the same properties. What it loses is
+that a law it declares is now violated, which comparison does not examine.
+Comparison answers "which guarantees did this version drop"; this gate needs
+`check`, which answers "does it keep the ones it declares". Worth knowing
+before someone wires the wrong verb into CI.
+
 ## The remaining §17 surfaces — `control/`, `gitcompare/`
 
 Two thin tests that exercise the last of the §17 command line on the models
 above (no new model files).
 
-### 12. `pol control` — dynamics as data — `control`
+### 13. `pol control` — dynamics as data — `control`
 `pol control oversight.pol` emits the model's **move list** as an instance of the
 standard library's `quiver` schema: one `node`, one `edge` per transition. The
 test asserts it is a `(of quiver)` instance and then **wraps and re-checks it**,
 proving the export is real Pol data that builds with the same machinery — the
 seam toward simulation maps between two models' move lists.
 
-### 13. `pol compare --git` — an amendment across commits — `gitcompare`
+### 14. `pol compare --git` — an amendment across commits — `gitcompare`
 The `oversight` repeal, but as *history* rather than two files. The test spins up
 a throwaway git repo, commits the law, then commits the repeal to the same path,
 and runs `pol compare --git HEAD~1 HEAD law.pol` — reporting `accountability

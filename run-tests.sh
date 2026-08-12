@@ -381,12 +381,14 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The nine scenarios this script walks by convention, and their 20 properties.
+  # The ten scenarios this script walks by convention, and their 22 properties.
   # `calculation/` and `gotha/` are not among them: each carries its own
   # explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the nine fails this line, which is the point of it.
-  has "cross-check: all 20 properties of the nine scenarios were considered" \
-    "$out" "considered 20 properties"
+  # property to any of the ten fails this line, which is the point of it — the
+  # count went 20 -> 22 when `migration/` joined, and this line is where that
+  # had to be said out loud.
+  has "cross-check: all 22 properties of the ten scenarios were considered" \
+    "$out" "considered 22 properties"
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
   has "cross-check: B. a live is its COUNTEREXAMPLE set — empty holds" \
@@ -404,9 +406,48 @@ crosscheck() {
     "arch/rerun-is-affordable  never: counterexample set of 88"
 }
 
+migration() {
+  echo "== Expand/contract — renaming a column under a live service =="
+  echo "   Q: is this migration plan safe at EVERY instant, including the ones"
+  echo "      where a rolling deploy has two releases serving at once?"
+
+  echo "   1/3: the plan"
+  mg=$("$POL" check "$here/migration/migration.pol" --claims "$here/migration/migration.claims" 2>&1)
+  mst=$?
+  printf '%s\n' "$mg" | sed 's/^/     | /'
+  exit_is "migration: the plan is clean" "$mst" 0
+  has "migration: A. the rename can be finished" "$mg" "holds  completes"
+  near "migration:    and pol prints the runbook, which nobody wrote" "$mg" "holds  completes" "add-column"
+  near "migration:    the backfill comes before the readers switch" "$mg" "holds  completes" "backfill"
+  has "migration: B. and no step strands production half-migrated" "$mg" "holds  no-dead-ends"
+  lacks "migration:    no law is violated" "$mg" "violated in"
+  lacks "migration:    and every breakable law is acknowledged" "$mg" "unadmitted"
+
+  echo "   2/3: the shortcut — the same file, ONE conjunct lighter"
+  sc=$("$POL" check "$here/migration/migration-shortcut.pol" --claims "$here/migration/migration.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "migration: the shortcut reports findings" "$sst" 1
+  has "migration: C. a reader goes out before the backfill" "$sc" "violated in 5 reachable situations"
+  near "migration:    and pol names the step that does it" "$sc" "violated in 5 reachable situations" "deploy-r3"
+  has "migration: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
+  has "migration:    and it never strands you either" "$sc" "holds  no-dead-ends"
+
+  echo "   3/3: the verb that does NOT catch it"
+  cm=$("$POL" compare "$here/migration/migration.pol" "$here/migration/migration-shortcut.pol" 2>&1)
+  cst=$?
+  printf '%s\n' "$cm" | sed 's/^/     | /'
+  exit_is "migration: compare is content" "$cst" 0
+  has "migration: E. compare says the guarantees survived" "$cm" "preserved"
+  lacks "migration:    nothing is reported LOST" "$cm" "LOST"
+  echo "      — the shortcut declares the same laws and keeps the same"
+  echo "        properties; what it loses is that one law it declares is now"
+  echo "        VIOLATED. So the gate is \`check\`, not \`compare\`."
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow access calculation gotha arch timetable migration control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"
