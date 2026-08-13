@@ -3,7 +3,7 @@
 ;
 ; `revocation-possible` is `live`, so this relation is the COUNTEREXAMPLE SET —
 ; the reachable situations from which "nobody is admin" can no longer be
-; reached — and it is NON-EMPTY, because `pol check` reports this property as
+; reached — and it is NON-EMPTY, because `writ check` reports this property as
 ; failing. That is the designed latch: grant-breakglass-admin has no inverse,
 ; so once it fires mallory is admin forever.
 ;

@@ -7,7 +7,7 @@
 ; nullary relation, which extension §3 rejects outright, so the question is
 ; asked in its refutable form instead: derive the situations that WITNESS a
 ; failure. Empty answer set ⟺ the property holds. The refutable form is also
-; the useful one — a failure hands `pol derive --why` a concrete stranded
+; the useful one — a failure hands `writ derive --why` a concrete stranded
 ; situation to explain, where a yes/no flag would hand it nothing.
 ;
 ; A green cross-check on this file therefore means "no case is ever stranded"
@@ -15,7 +15,7 @@
 ; oversight/accountability, are also the repo's inversion detectors: they are
 ; the `live` properties that HOLD, so their counterexample set is empty while
 ; their satisfying set is not, and re-pointing `settle-able` at
-; `can-still-settle` flips the derived verdict to `fails` against a `pol check`
+; `can-still-settle` flips the derived verdict to `fails` against a `writ check`
 ; that says `holds`. (Where a `live` property fails — river/no-blunders,
 ; access/revocation-possible — both sets are non-empty and an inversion there
 ; is invisible to the oracle. Hence these comments.)

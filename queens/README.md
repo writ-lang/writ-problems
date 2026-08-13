@@ -1,11 +1,11 @@
 # Eight queens — and what made it tractable
 
-Eight queens on a board, none attacking another. `pol check queens.pol
+Eight queens on a board, none attacking another. `writ check queens.writ
 --claims queens.claims` answers it in about a fifth of a second, and the
 witness under the holding `solvable` **is** a solution — the eight moves that
 place the queens.
 
-This scenario is here for three reasons. It is the first puzzle Pol can state
+This scenario is here for three reasons. It is the first puzzle Writ can state
 that it could not state before; it is the clearest measurement in the
 repository of *which* optimisation matters; and it is where a 468-line model
 became a fifteen-line one over a shared library, in two modelling steps and
@@ -14,23 +14,23 @@ needing a specific one, which is a distinction worth being able to point at.
 
 ## The board is a library
 
-Neither `.pol` file here contains a board. Both load one:
+Neither `.writ` file here contains a board. Both load one:
 
 ```lisp
-(load "../libraries/chess.lib.pol")
+(load "../libraries/chess.lib.writ")
 (use board)
 (initial empty)
 ```
 
-[`../libraries/chess.lib.pol`](../libraries/chess.lib.pol) is a **domain
-library** — the vocabulary of a chessboard, and none of its behaviour. That split is what leaves `queens.pol` at fifteen lines
-and `queens-unordered.pol` at twenty: everything they share is said once.
+[`../libraries/chess.lib.writ`](../libraries/chess.lib.writ) is a **domain
+library** — the vocabulary of a chessboard, and none of its behaviour. That split is what leaves `queens.writ` at fifteen lines
+and `queens-unordered.writ` at twenty: everything they share is said once.
 
 | | lines |
 | --- | --- |
-| `../libraries/chess.lib.pol` — squares, rows, diagonals, the `free` test, the empty board | 69 |
-| `queens.pol` — the cursor and eight moves | **15** |
-| `queens-unordered.pol` — sixty-four moves in eight lines | **20** |
+| `../libraries/chess.lib.writ` — squares, rows, diagonals, the `free` test, the empty board | 69 |
+| `queens.writ` — the cursor and eight moves | **15** |
+| `queens-unordered.writ` — sixty-four moves in eight lines | **20** |
 
 Three things make it a library rather than a file that happens to be loaded.
 
@@ -40,9 +40,9 @@ instance and forms — but never a model's own choice of what to run.
 
 **It is found by a relative path, with nothing configured.** Design D3's
 *first* search rule is the including file's own directory, which is what makes
-`../libraries/…` resolve — no `POL_LIB`, no install step. `stdlib.pol` is
+`../libraries/…` resolve — no `WRIT_LIB`, no install step. `stdlib.writ` is
 shipped; a domain library is not, and that is the whole difference between the
-two kinds. (`POL_TRACE_LOADS=1` prints which file each load resolved to, which
+two kinds. (`WRIT_TRACE_LOADS=1` prints which file each load resolved to, which
 is how you check rather than assume.)
 
 **It pays the namespace.** Names are global across the loaded universe and may
@@ -52,7 +52,7 @@ not be redeclared (§7), so every model loading this gives up `board`, `square`,
 spend the shared namespace on a worldly concept.
 
 And it **offers** rather than imposes. The library declares a `cursor-t`;
-`queens.pol` advances one and needs eight moves, `queens-unordered.pol` never
+`queens.writ` advances one and needs eight moves, `queens-unordered.writ` never
 touches it and needs sixty-four. Which of the vocabulary to use is the model's
 say — and the unused cursor costs the unordered space nothing, because a cell
 that never changes is the same cell in every situation.
@@ -158,7 +158,7 @@ every step. Nothing about the space moved through any of it.
 
 The last row is bookkeeping rather than a saving: 15 + 69 is not fewer lines
 than 83. What it buys is that the 69 are shared — the two models together went
-from 167 lines to 104 — and that a reader opening `queens.pol` sees eight moves
+from 167 lines to 104 — and that a reader opening `queens.writ` sees eight moves
 and nothing else.
 
 The two ideas are independent and it is worth keeping them apart. **Naming the
@@ -173,19 +173,19 @@ irreducible — it is the board — and eight moves is one per row, which is the
 puzzle's own shape.
 
 The remaining awkwardness is that `sq1`…`sq8` are eight separate arrows where
-one indexed arrow would do. Pol has no indexed arrow, deliberately: an arrow
+one indexed arrow would do. Writ has no indexed arrow, deliberately: an arrow
 is a function with a name, not an array. Writing the board column-wise makes
 the data read as a table, which is the best available answer.
 
 ## The optimisation that worked: order the placements
 
-`queens.pol` and `queens-unordered.pol` describe the same puzzle and have the
+`queens.writ` and `queens-unordered.writ` describe the same puzzle and have the
 same 92 solutions. The unordered one lets any column be filled at any time.
 
-| | moves | situations | `pol check` |
+| | moves | situations | `writ check` |
 | --- | --- | --- | --- |
-| `queens-unordered.pol` | 64 | 118 969 | 30 s |
-| `queens.pol` | 8 | 2 057 | 0.2 s |
+| `queens-unordered.writ` | 64 | 118 969 | 30 s |
+| `queens.writ` | 8 | 2 057 | 0.2 s |
 
 Nothing about legality changed. What changed is what the space *holds*: every
 safe **subset** of columns, versus every safe **prefix**. The subsets are the
@@ -226,7 +226,7 @@ Three plausible engine fixes were tried on this puzzle. Two bought nothing
 and one bought 13×, and the difference was not intuition — it was measuring
 instead of reasoning.
 
-Timing `pol check` by phase on a 16 870-situation model settled it at once:
+Timing `writ check` by phase on a 16 870-situation model settled it at once:
 
 ```
 [load]      8 ms
@@ -305,7 +305,7 @@ measured, and it is worse on every axis that matters:
 Two costs, one fatal. A walking queen passes *through* unsafe squares, so the
 space grows 7.6×. And a complete board stops being a **dead end** — the queen
 can always step again — which destroys the nicest thing this example
-demonstrates: that `pol check`'s dead-end list *is* the solution set, all 92 of
+demonstrates: that `writ check`'s dead-end list *is* the solution set, all 92 of
 them, with no query needed. The unordered walk variant does not even build; it
 exceeds the 200 000 cap.
 
@@ -315,11 +315,11 @@ which needs branching *and* needs "no move left" to mean "solved".
 
 ## Files
 
-- [`../libraries/chess.lib.pol`](../libraries/chess.lib.pol) — the domain
+- [`../libraries/chess.lib.writ`](../libraries/chess.lib.writ) — the domain
   library both models load: the board, and the `free` test over it. No moves.
   See [`../libraries/README.md`](../libraries/README.md).
-- `queens.pol` — column-ordered, 2 057 situations. What the runner exercises.
-- `queens-unordered.pol` — the same board without the ordering commitment, so
+- `queens.writ` — column-ordered, 2 057 situations. What the runner exercises.
+- `queens-unordered.writ` — the same board without the ordering commitment, so
   no cursor and sixty-four moves (in eight lines). Kept as the measured
   contrast; **not** run by the test suite, because it takes ~30 s where the
   ordered model takes a fifth of a second.

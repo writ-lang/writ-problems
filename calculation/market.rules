@@ -1,6 +1,6 @@
 ; The three questions of market.claims, re-asked as derivations (extension §2).
 ; `cross-check.sh` beside this file puts them to BOTH models and compares each
-; against `pol check`: if the two ever disagree, one of them is wrong and the
+; against `writ check`: if the two ever disagree, one of them is wrong and the
 ; disagreement is the finding — not a number to adjust.
 ;
 ; POLARITY — read this before "fixing" anything below.
@@ -12,9 +12,9 @@
 ; two counterexample sets are empty and the satisfying set is not — which is the
 ; configuration that would catch an inversion, since swapping a polarity flips
 ; a verdict rather than leaving both sets non-empty (as access.rules warns of
-; its own). The same file put to `planned.pol` returns the mirror image:
+; its own). The same file put to `planned.writ` returns the mirror image:
 ;
-;     pol derive planned.pol market.rules no-waste
+;     writ derive planned.writ market.rules no-waste
 ;
 ; names the situations in which the steel is standing in a statue.
 

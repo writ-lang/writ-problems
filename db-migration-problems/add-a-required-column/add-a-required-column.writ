@@ -1,0 +1,119 @@
+; Making a column required — and adding the constraint before the code that
+; can satisfy it.
+;
+; You want every user to have a country. You cannot simply add the column as
+; NOT NULL, because the rows that already exist have no value for it. So the
+; column arrives nullable, gets filled in, and only then becomes required.
+;
+; The trap here is not about time in the way the other two are. It is about
+; ORDER OF RESPONSIBILITY. A NOT NULL constraint is a promise the DATABASE
+; makes on behalf of the CODE: from now on, every insert supplies a country.
+; Adding the constraint before the code that keeps that promise is deployed
+; means the database starts enforcing a rule the running application does not
+; follow, and the next insert is rejected.
+;
+; Backfilling does not help, and that is the part worth noticing. The backfill
+; fixes the rows that already exist. It says nothing about the rows the
+; currently deployed release is about to write.
+
+(load "stdlib.writ")
+(load "add-a-required-column.lib.writ")
+
+(schema add-a-required-column
+
+  (type presence (absent present))
+  (type done     (no yes))
+
+  ; Three facts about a column, and they are independent. It can exist and be
+  ; empty; it can be full and not yet required; it cannot sensibly be required
+  ; and empty, which is one of the rules below rather than a fact of the type.
+  (type column
+    (arrow state    (to presence))
+    (arrow filled   (to done))
+    (arrow required (to done)))
+
+  ; r1 is the code as deployed today: it does not know about the column.
+  ; r2 writes a country on every insert.
+  (type release (r1 r2))
+
+  (type writes
+    (arrow by  (to release) fixed)
+    (arrow col (to column)  fixed))
+
+  (type fleet
+    (arrow old (to release))
+    (arrow new (to release)))
+
+  ; ---- the rules ----
+
+  ; 1. Nobody writes a column that does not exist.
+  (equation write-of-existing
+    (not (some (W writes)
+           (and (or (is W.by fleet.old) (is W.by fleet.new))
+                (is W.col.state absent)))))
+
+  ; 2. A required column must have a value in every row. This is the database's
+  ; own check: `ALTER TABLE ... SET NOT NULL` is rejected outright if any row
+  ; holds a NULL, so getting this wrong fails loudly and immediately.
+  ; Its subject is the COLUMN, not the fleet: it is a fact about the column
+  ; alone, and needs nothing about who is running to decide it.
+  (equation required-needs-data
+    (not (and (is column.required yes) (is column.filled no))))
+
+  ; 3. A required column must be written by EVERY live release. This is the one
+  ; the shortcut breaks, and unlike rule 2 the database cannot check it: the
+  ; ALTER succeeds, and the failure arrives later, on the first insert from a
+  ; release that does not supply a value.
+  (equation required-needs-every-writer
+    (not (some (W writes)
+           (and (is W.col.required yes)
+                (not (and (some (V writes)
+                            (and (is V.by fleet.old) (is V.col W.col)))
+                          (some (V writes)
+                            (and (is V.by fleet.new) (is V.col W.col))))))))))
+
+(instance start add-a-required-column
+
+  ; The column does not exist yet, holds nothing, and is not required.
+  (column country-col (state absent) (filled no) (required no))
+
+  ; r1 writes nothing here — it has never heard of the column, which is exactly
+  ; why it appears in no `writes` record. r2 writes it on every insert.
+  (writes wr1 (by r2) (col country-col))
+
+  (fleet prod (old r1) (new r1)))
+
+(use add-a-required-column)
+(initial start)
+
+; ---- the runbook ----
+
+; The column arrives nullable. Safe at any time: nothing writes it yet, and
+; nothing requires it.
+(transition add-column
+  (when (is country-col.state absent))
+  (do (set country-col.state present)))
+
+; Ship the code that supplies a country on every insert.
+(transition deploy-r2
+  (when (and settled (is prod.new r1) (is country-col.state present)))
+  (do (set prod.new r2)))
+
+(transition settle
+  (when rolling)
+  (do (set prod.old prod.new)))
+
+; Fill in the rows that already existed.
+(transition backfill
+  (when (and (is country-col.state present) (is country-col.filled no)))
+  (do (set country-col.filled yes)))
+
+; Add the constraint. Two conditions, and they guard two different failures.
+; `filled yes` is the one the database checks for you. `every-live-writes` is
+; the one it cannot: removing it is the sibling file.
+(transition require
+  (when (and (is country-col.state present)
+             (is country-col.filled yes)
+             (is country-col.required no)
+             (every-live-writes W country-col)))
+  (do (set country-col.required yes)))

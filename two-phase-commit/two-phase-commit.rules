@@ -13,10 +13,10 @@
 ; `must-decide-if-applied` is deliberately absent. It carries a `(fair …)`
 ; clause, and ct.rules §8 does not read one — it encodes the plain modality,
 ; over every run there is. Deriving it here would answer a different question
-; from the one `pol check` answers and call the disagreement a bug. The
+; from the one `writ check` answers and call the disagreement a bug. The
 ; cross-check skips a fair property for the same reason.
 
-(load "stdlib.pol")
+(load "stdlib.writ")
 (load "ct.rules")
 
 ; possible — the satisfying set is the answer.

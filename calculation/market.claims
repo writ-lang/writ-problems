@@ -1,9 +1,9 @@
 ; The questions about the allocation of one scarce input (§16). They sit beside
-; `market.pol` because a claims file is read as a model's sibling by `pol query`
-; and `pol compare` — but they are not *about* it. They are put to `planned.pol`
+; `market.writ` because a claims file is read as a model's sibling by `writ query`
+; and `writ compare` — but they are not *about* it. They are put to `planned.writ`
 ; unchanged, by name:
 ;
-;     pol check planned.pol --claims market.claims
+;     writ check planned.writ --claims market.claims
 ;
 ; which is the whole reason questions live apart from models. The two models
 ; share a library, a schema, an instance, a move set and every transition name;
@@ -11,7 +11,7 @@
 ; held fixed, and the verdicts are what move.
 
 ; 1. CAN it come out right? Neither arrangement is incapable — this is not a
-; question about competence. It holds in both, and `pol` prints the route.
+; question about competence. It holds in both, and `writ` prints the route.
 (property need-can-be-met
   "the steel can end up built at a plant that needed it"
   (possible (and (is steel.state built) (is steel.at.need high))))
@@ -55,7 +55,7 @@
 
 ; Which plants actually need the steel? (§16.2) The answer is the same in both
 ; models, at state 0 and at every other, because `need` is wiring. The fact is
-; in the world, sitting in the model, printable on demand — and in `planned.pol`
+; in the world, sitting in the model, printable on demand — and in `planned.writ`
 ; there is no move whose guard can read it. That is the whole difficulty in one
 ; line of output: the problem is never that the information does not exist.
 (query who-needs-it

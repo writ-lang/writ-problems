@@ -1,7 +1,7 @@
 ; The questions, put to BOTH plans, so any difference in the answers comes from
 ; the plan and from nothing else.
 
-(load "drop-a-column.lib.pol")
+(load "drop-a-column.lib.writ")
 
 (property completes
   "the column can be dropped, with the fleet settled on the release that does not use it"
@@ -12,7 +12,7 @@
   (live dropped))
 
 ; ---- ownership ----
-; A rule that some step could break has to be acknowledged, or `pol` reports it
+; A rule that some step could break has to be acknowledged, or `writ` reports it
 ; unadmitted. Both steps that move the fleet can affect both rules, and so can
 ; the drop itself; saying so here is the operator confirming they looked.
 (accept deploy-r2   read-of-existing)

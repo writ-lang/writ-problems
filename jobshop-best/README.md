@@ -22,7 +22,7 @@ the schedule that achieves it.
 
 ## How you get a "best" out of a language with no numbers
 
-Pol has no arithmetic, so a duration cannot be added up and a makespan cannot
+Writ has no arithmetic, so a duration cannot be added up and a makespan cannot
 be computed. But Appendix G's escape clause is exact about the way round it:
 
 > quantities and arithmetic … out of scope, **unless honestly reduced to small
@@ -73,7 +73,7 @@ model around rather than replacing it: ask the cheap question first, and only
 pay for the clock when the answer you need is a duration.
 
 It will also not scale like a real solver. Nine ticks and three jobs is
-comfortable; a shop floor is not. The honest positioning is that Pol gives you
+comfortable; a shop floor is not. The honest positioning is that Writ gives you
 an *optimal* answer with a *proof* on small instances, where a solver gives you
 a good answer fast on large ones.
 
@@ -106,11 +106,11 @@ The space is unchanged: still 1314 situations, still an optimum of five.
 
 ## Files
 
-- [`../libraries/scheduling.lib.pol`](../libraries/scheduling.lib.pol) — the
+- [`../libraries/scheduling.lib.writ`](../libraries/scheduling.lib.writ) — the
   **domain library** both job shop scenarios load: the shop, the blocking rule,
   the turn discipline, the tick ladder. No moves. See
   [`../libraries/README.md`](../libraries/README.md).
-- `jobshop-best.pol` — 20 lines: the same three moves as next door, each
+- `jobshop-best.writ` — 20 lines: the same three moves as next door, each
   spending the job's turn, plus one `tick-over`.
 - `jobshop-best.claims` — the two bounds that pin the optimum.
 - `jobshop-best.rules` — both, re-asked of the rules engine, so the cross-check

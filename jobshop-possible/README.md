@@ -71,7 +71,7 @@ The unnerving part is that nothing illegal happened. Every single move was
 allowed. The shop walked into the trap three correct decisions at a time, and
 that is precisely the kind of failure a human reading the routings will miss.
 
-## What Pol is asked, and what it answers
+## What Writ is asked, and what it answers
 
 Two questions, which sound similar and are not:
 
@@ -87,10 +87,10 @@ fails  never-stuck
   witness:  1. a-enters   2. b-enters   3. c-enters
 ```
 
-The first **holds** — a good schedule exists, and Pol prints one: run the jobs
+The first **holds** — a good schedule exists, and Writ prints one: run the jobs
 one after another and nothing collides.
 
-The second **fails**, and that is the answer worth having. Pol names the
+The second **fails**, and that is the answer worth having. Writ names the
 deadlocked situation in full, and gives the three moves that reach it. Not "a
 deadlock is possible in principle" — *this* state, by *these* moves.
 
@@ -116,7 +116,7 @@ time.
 The witness under `all-finish` is worth reading with that in mind. It is **a**
 schedule, not a good one: it runs the jobs strictly one after another, leaving
 the machines idle. Every complete schedule here is nine moves, so "shortest"
-ranks none of them above another and Pol returned whichever it found first.
+ranks none of them above another and Writ returned whichever it found first.
 Read it as proof that finishing is possible, never as a recommendation of how.
 
 ## One thing worth copying from this model
@@ -132,11 +132,11 @@ the way it does.
 
 ## Files
 
-- [`../libraries/scheduling.lib.pol`](../libraries/scheduling.lib.pol) — the
+- [`../libraries/scheduling.lib.writ`](../libraries/scheduling.lib.writ) — the
   **domain library** both job shop scenarios load: the shop, the blocking rule,
   the turn discipline, a clock. No moves. See
   [`../libraries/README.md`](../libraries/README.md).
-- `jobshop-possible.pol` — 19 lines: three move forms and one line per job.
+- `jobshop-possible.writ` — 19 lines: three move forms and one line per job.
   No clock — the library offers one and this model declines it.
 - `jobshop-possible.claims` — the two questions, kept next door (wish 12).
   They load the library too, for `all-done`.

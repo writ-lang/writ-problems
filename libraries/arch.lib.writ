@@ -1,0 +1,88 @@
+; arch.lib.writ — vocabulary for DESIGNING a system architecture out of a bank
+; of components, and the guards that decide which parts may fill which stage.
+;
+; A DOMAIN LIBRARY: declarations only — a schema and forms, no `use`, no
+; `initial`, no `transition`. What may HAPPEN lives in the scenario that loads
+; this file, exactly as chess.lib.writ holds the board and queens.writ the moves.
+;
+; The shape is the eight-queens shape one level up. A queen is placed on a
+; square; a STAGE is filled by a COMPONENT. A cursor walks the stages in build
+; order so the search indexes stages rather than permutations, and a finished
+; architecture is a dead end because a filled ladder has no move left.
+
+(load "stdlib.writ")
+
+(schema arch
+  (type flag (no yes))
+  (type coupling (loose contract tight))
+
+  ; A BUILDING BLOCK, and the properties an architecture is judged on.
+  ; Every attribute is `vacatable` because most do not apply to most parts —
+  ; an object store has no opinion about scanned pages — and `is` is strict, so
+  ; a part is admitted on an attribute only where it actually claims one.
+  (type comp
+    (arrow bulk       (to flag) fixed vacatable)     ; survives the data volume
+    (arrow scans      (to flag) fixed vacatable)     ; reads scanned pages
+    (arrow rerunnable (to flag) fixed vacatable)     ; same input, same output
+    (arrow persists   (to flag) fixed vacatable)     ; keeps its output
+    (arrow couples    (to coupling) fixed vacatable))
+
+  ; A STAGE the architecture must fill, and what it demands of whatever fills
+  ; it. The demands ARE the brief, formalised: a requirement is a `needs-`
+  ; arrow, and every requirement is answered by exactly one attribute above.
+  (type cap
+    (arrow next        (to cap)  fixed vacatable)    ; build order, as a ladder
+    (arrow chosen      (to comp) vacatable)          ; THE decision variable
+    (arrow needs-bulk  (to flag) fixed)
+    (arrow needs-scan  (to flag) fixed)
+    (arrow needs-rerun (to flag) fixed)
+    (arrow needs-loose (to flag) fixed))
+
+  ; Arrows are unary (§8.5), so every many-to-many fact is a SPAN — one named
+  ; junction entity per edge. Two spans rather than stdlib's `span` form,
+  ; because that form names both legs `left`/`right`, and a rule rooted at a
+  ; variable cannot be typed from an arrow name two types share (interrogator
+  ; §1). Distinct leg names keep `.rules` writable without annotation.
+  (type prov
+    (arrow p-comp (to comp) fixed)
+    (arrow p-cap  (to cap)  fixed))
+
+  (type req
+    (arrow r-comp (to comp) fixed)
+    (arrow r-cap  (to cap)  fixed))
+
+  (type cursor
+    (arrow at (to cap) vacatable)))
+
+; Does component C meet what stage K demands? A demand of `no` is satisfied by
+; anything; a demand of `yes` needs the part to claim the matching attribute.
+(form (fits C K)
+  (and (or (is K.needs-bulk  no) (is C.bulk yes))
+          (or (is K.needs-scan  no) (is C.scans yes))
+          (or (is K.needs-rerun no) (is C.rerunnable yes))
+          (or (is K.needs-loose no) (not (is C.couples tight)))))
+
+; Is every stage C depends on already filled?
+;
+; R IS A PARAMETER, NOT AN OVERSIGHT. A form cannot introduce a bound variable:
+; an undeclared symbol in a template is read as a form name, so writing
+; `(all (R req) …)` here is rejected with "template of `deps-met` mentions `R`,
+; a form not yet declared". The binder is threaded in and named at each call
+; site instead.
+;
+; It is also why selection is a TRANSITION and not a rule: this is a universal
+; over a roster, and the kernel has `all` (stdlib, from `some`) where stratified
+; Datalog cannot state one positively.
+(form (deps-met C R)
+  (all (R req) (or (not (is R.r-comp C)) (defined R.r-cap.chosen))))
+
+; One move per (component, stage) pair it could fill. The cursor advances, so
+; the ladder's end leaves `set cur.at` with no answer and the move is ABSENT —
+; a finished architecture is a dead end, needing no guard to say so.
+(form (pick NAME C K R)
+  (transition NAME
+       (when (and (is cur.at K)
+                  (not (defined K.chosen))
+                  (fits C K)
+                  (deps-met C R)))
+       (do (set K.chosen C) (set cur.at K.next))))

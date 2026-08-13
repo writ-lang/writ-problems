@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # gotha's three questions, asked twice.
 #
-# `pol check` reads the modalities in gotha.claims as CTL (runtime/checker.ml).
-# `pol derive` answers the same three questions from gotha.rules as relations
+# `writ check` reads the modalities in gotha.claims as CTL (runtime/checker.ml).
+# `writ derive` answers the same three questions from gotha.rules as relations
 # over the same enumerated space. They are two implementations, so a
 # disagreement is a bug in one of them — never a number to adjust here.
 #
@@ -16,17 +16,17 @@
 #   never      the COUNTEREXAMPLE set    empty     = holds
 #   live       the COUNTEREXAMPLE set    empty     = holds
 #
-# Usage:  cross-check.sh        (`pol` from $POL; default: the one on PATH)
+# Usage:  cross-check.sh        (`writ` from $WRIT; default: the one on PATH)
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-POL=${POL:-pol}
-model="$here/gotha.pol"
-check=$("$POL" check "$model" --claims "$here/gotha.claims" 2>&1)
+WRIT=${WRIT:-writ}
+model="$here/gotha.writ"
+check=$("$WRIT" check "$model" --claims "$here/gotha.claims" 2>&1)
 bad=0
 
 cross() { # property  modality
-  rows=$("$POL" derive "$model" "$here/gotha.rules" "$1" 2>&1 | grep -c '^  ')
+  rows=$("$WRIT" derive "$model" "$here/gotha.rules" "$1" 2>&1 | grep -c '^  ')
   case "$2" in
   possible) [ "$rows" -gt 0 ] && derived=holds || derived=fails ;;
   never | live) [ "$rows" -eq 0 ] && derived=holds || derived=fails ;;

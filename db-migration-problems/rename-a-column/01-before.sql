@@ -1,6 +1,6 @@
 -- STEP 0 — the schema as it stands in production today.
 --
--- The row at the bottom is one representative user. `pol sql --with-data`
+-- The row at the bottom is one representative user. `writ sql --with-data`
 -- reads it, so this file is checkable on its own rather than being a fragment
 -- that only means something next to the others.
 

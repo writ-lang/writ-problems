@@ -1,9 +1,9 @@
 #!/bin/sh
 # Copyright (C) 2026 Alex Kunich
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# End-to-end tests: SOLVE the Prologue puzzles with `pol` and check the answers
-# — including the SOLUTION PATH `pol` prints (the witness under a holding
-# `possible`). Each `pol check` exits 1 because it HAS findings to report — that
+# End-to-end tests: SOLVE the Prologue puzzles with `writ` and check the answers
+# — including the SOLUTION PATH `writ` prints (the witness under a holding
+# `possible`). Each `writ check` exits 1 because it HAS findings to report — that
 # is the correct outcome here (a blunder IS possible; the census ISN'T
 # completable) — so the tests assert exit 1.
 #
@@ -11,11 +11,11 @@
 #   run-tests.sh list      # the numbered menu
 #   run-tests.sh 3         # run test #3 by number
 #   run-tests.sh river     # run one by name
-# `pol` is taken from $POL (default: the one on PATH).
+# `writ` is taken from $WRIT (default: the one on PATH).
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-POL=${POL:-pol}
+WRIT=${WRIT:-writ}
 pass=0
 fail=0
 
@@ -43,30 +43,30 @@ exit_is() { # label  actual  expected
 river() {
   echo "== The river crossing (kernel-spec Appendix C) =="
   echo "   Q: can the farmer get the wolf, goat and cabbage across intact?"
-  out=$("$POL" check "$here/river/river.pol" --claims "$here/river/river.claims" 2>&1)
+  out=$("$WRIT" check "$here/river/river.writ" --claims "$here/river/river.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "river: check reports findings" "$st" 1
   has "river: 36 reachable arrangements" "$out" "states: 36"
   has "river: A. the crossing IS solvable" "$out" "holds  solvable"
-  near "river:    and pol SHOWS a real, safe crossing (the solution path)" "$out" "holds  solvable" "witness:"
+  near "river:    and writ SHOWS a real, safe crossing (the solution path)" "$out" "holds  solvable" "witness:"
   near "river:    that brings the goat BACK — the hallmark of the real solution" "$out" "holds  solvable" "cross-goat-RL"
   near "river:    before ferrying the cabbage across" "$out" "holds  solvable" "cross-cabbage-LR"
   has "river: B. but a careless crossing dooms it" "$out" "fails  no-blunders"
-  near "river:    pol names the blundering move" "$out" "fails  no-blunders" "witness:"
+  near "river:    writ names the blundering move" "$out" "fails  no-blunders" "witness:"
   near "river:    stranding prey with its predator is the mistake" "$out" "fails  no-blunders" "stuck at:"
 }
 
 queens() {
   echo "== Eight queens =="
   echo "   Q: can eight queens stand on a board with none attacking another?"
-  out=$("$POL" check "$here/queens/queens.pol" --claims "$here/queens/queens.claims" 2>&1)
+  out=$("$WRIT" check "$here/queens/queens.writ" --claims "$here/queens/queens.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /' | head -14
   exit_is "queens: check exits clean — nothing is wrong with the board" "$st" 0
   has "queens: 2057 situations, the column-ordered search tree" "$out" "states: 2057"
   has "queens: A. eight queens CAN be placed" "$out" "holds  solvable"
-  near "queens:    and pol shows where they go" "$out" "holds  solvable" "witness:"
+  near "queens:    and writ shows where they go" "$out" "holds  solvable" "witness:"
   near "queens:    starting from a first-column placement" "$out" "holds  solvable" "1. place-"
   # `near` looks six lines past its anchor and the witness is eight moves, so
   # the last one is asserted on the numbered line it prints as — a spelling
@@ -88,7 +88,7 @@ queens() {
 island() {
   echo "== Knights & knaves (kernel-spec Appendix D) =="
   echo "   Q: can every native be classified, and who could be a knight?"
-  out=$("$POL" check "$here/island/island.pol" --claims "$here/island/island.claims" 2>&1)
+  out=$("$WRIT" check "$here/island/island.writ" --claims "$here/island/island.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "island: check reports findings" "$st" 1
@@ -98,7 +98,7 @@ island() {
   has "island:    the rules are silent there" "$out" "rules are silent"
   has "island: B. NOT everyone is classifiable" "$out" "fails  census-completable"
   has "island: C. abe could be a knight" "$out" "holds  abe-can-be-knight"
-  near "island:    and pol shows the reading that makes it so" "$out" "holds  abe-can-be-knight" "abe-is-knight"
+  near "island:    and writ shows the reading that makes it so" "$out" "holds  abe-can-be-knight" "abe-is-knight"
   has "island:    bea could be a knight" "$out" "holds  bea-can-be-knight"
   has "island:    cal could be nothing at all" "$out" "fails  cal-can-be-knight"
 }
@@ -107,13 +107,13 @@ jobshop_possible() {
   echo "== A blocking job shop =="
   echo "   Q: three jobs, three machines, no buffers — can every schedule still"
   echo "      finish, or can the shop walk into a deadlock?"
-  out=$("$POL" check "$here/jobshop-possible/jobshop-possible.pol" --claims "$here/jobshop-possible/jobshop-possible.claims" 2>&1)
+  out=$("$WRIT" check "$here/jobshop-possible/jobshop-possible.writ" --claims "$here/jobshop-possible/jobshop-possible.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "jobshop-possible: check reports findings" "$st" 1
   has "jobshop-possible: 51 reachable schedules" "$out" "states: 51"
   has "jobshop-possible: A. some schedule finishes every job" "$out" "holds  all-finish"
-  near "jobshop-possible:    and pol shows one" "$out" "holds  all-finish" "witness:"
+  near "jobshop-possible:    and writ shows one" "$out" "holds  all-finish" "witness:"
   has "jobshop-possible: B. but not EVERY schedule can still finish" "$out" "fails  never-stuck"
   has "jobshop-possible:    the deadlock is named in full" "$out" \
     "m1.held-by=a m2.held-by=b m3.held-by=c"
@@ -125,7 +125,7 @@ jobshop_possible() {
 jobshop_best() {
   echo "== The same job shop, with a clock =="
   echo "   Q: what is the SHORTEST schedule, and what does it look like?"
-  out=$("$POL" check "$here/jobshop-best/jobshop-best.pol" \
+  out=$("$WRIT" check "$here/jobshop-best/jobshop-best.writ" \
     --claims "$here/jobshop-best/jobshop-best.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
@@ -134,7 +134,7 @@ jobshop_best() {
   has "jobshop-best: A. four ticks is NOT enough" "$out" "fails  done-by-4"
   has "jobshop-best: B. five ticks is — the optimum, pinned from both sides" "$out" \
     "holds  done-by-5"
-  near "jobshop-best:    and pol prints the optimal schedule" "$out" \
+  near "jobshop-best:    and writ prints the optimal schedule" "$out" \
     "holds  done-by-5" "witness:"
   # The optimum overlaps a and b while holding c back — which is exactly what
   # jobshop-possible proved was necessary, since all three in the shop at once
@@ -149,7 +149,7 @@ oversight() {
   echo "== Institutional architecture (kernel-spec §3, §4 running example) =="
   echo "   Q: can one lawful move permanently destroy accountability, and what"
   echo "      does repealing restoration actually cost?"
-  out=$("$POL" check "$here/oversight/oversight.pol" --claims "$here/oversight/oversight.claims" 2>&1)
+  out=$("$WRIT" check "$here/oversight/oversight.writ" --claims "$here/oversight/oversight.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "oversight: check reports findings" "$st" 1
@@ -157,11 +157,11 @@ oversight() {
   has "oversight:    the law's breakers are named" "$out" "can be broken by: capture-watchdog, restore-watchdog"
   lacks "oversight:    and both are accepted — nothing unadmitted" "$out" "unadmitted"
   has "oversight: B. the case can conclude" "$out" "holds  conviction-possible"
-  near "oversight:    and pol prints the concluding move" "$out" "holds  conviction-possible" "witness:"
+  near "oversight:    and writ prints the concluding move" "$out" "holds  conviction-possible" "witness:"
   has "oversight: C. accountability holds (restoration exists)" "$out" "holds  accountability"
 
   echo "   Q: this amendment repeals restoration — what does it change?"
-  cmp=$("$POL" compare "$here/oversight/oversight.pol" "$here/oversight/oversight-repeal.pol" 2>&1)
+  cmp=$("$WRIT" compare "$here/oversight/oversight.writ" "$here/oversight/oversight-repeal.writ" 2>&1)
   cst=$?
   printf '%s\n' "$cmp" | sed 's/^/     | /'
   exit_is "oversight: compare reports a loss" "$cst" 1
@@ -174,7 +174,7 @@ workflow() {
   echo "== Regulated workflow — KYC / claims (kernel-spec §3) =="
   echo "   Q: where does automation end, which reassignments break the law, and"
   echo "      can a case get stuck?"
-  out=$("$POL" check "$here/workflow/workflow.pol" --claims "$here/workflow/workflow.claims" 2>&1)
+  out=$("$WRIT" check "$here/workflow/workflow.writ" --claims "$here/workflow/workflow.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "workflow: check reports findings" "$st" 1
@@ -191,7 +191,7 @@ two_phase_commit() {
   echo "== Two-phase commit — agreeing to commit across parties that can fail =="
   echo "   Q: can the parties disagree, can they be left waiting for ever, and"
   echo "      what does the obvious cure for the waiting cost?"
-  out=$("$POL" check "$d/two-phase-commit.pol" --claims "$d/two-phase-commit.claims" 2>&1)
+  out=$("$WRIT" check "$d/two-phase-commit.writ" --claims "$d/two-phase-commit.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /' | grep -v 'reached by:'
   exit_is "2pc: check reports findings" "$st" 1
@@ -201,7 +201,7 @@ two_phase_commit() {
   has "2pc:    and committing is actually reachable" "$out" "holds  can-commit"
   near "2pc:    with the route that gets there" "$out" "holds  can-commit" "witness:"
 
-  # The textbook blocking result, and pol finds it in two moves: one participant
+  # The textbook blocking result, and writ finds it in two moves: one participant
   # prepares — surrendering its right to decide — and the coordinator dies.
   has "2pc: B. but a prepared participant CAN be left unable to decide" "$out" "fails  can-decide"
   near "2pc:    two moves is all it takes" "$out" "fails  can-decide" "2. c-crash"
@@ -215,7 +215,7 @@ two_phase_commit() {
 
   # The retransmitting network: no crash at all, and the two liveness questions
   # come apart. This is the whole reason `inevitable` exists.
-  lossy=$("$POL" check "$d/two-phase-commit-lossy.pol" --claims "$d/two-phase-commit.claims" 2>&1)
+  lossy=$("$WRIT" check "$d/two-phase-commit-lossy.writ" --claims "$d/two-phase-commit.claims" 2>&1)
   printf '%s\n' "$lossy" | sed 's/^/     | /' | grep -v 'reached by:'
   has "2pc: D. over a network that drops and resends, deciding stays REACHABLE" "$lossy" "holds  can-decide"
   has "2pc:    and yet a run can decline it for ever" "$lossy" "fails  must-decide"
@@ -224,12 +224,12 @@ two_phase_commit() {
 
   # The trade, priced. Letting a stranded participant give up buys every
   # liveness property and sells the one the protocol exists for.
-  cmp=$("$POL" compare "$d/two-phase-commit.pol" "$d/two-phase-commit-timeout.pol" 2>&1)
+  cmp=$("$WRIT" compare "$d/two-phase-commit.writ" "$d/two-phase-commit-timeout.writ" 2>&1)
   cst=$?
   printf '%s\n' "$cmp" | sed 's/^/     | /'
   exit_is "2pc: E. compare reports a lost guarantee" "$cst" 1
   has "2pc:    the timeout cure LOSES atomicity" "$cmp" "atomic                  LOST"
-  has "2pc:    and pol prints the run that breaks it" "$cmp" "p2-timeout"
+  has "2pc:    and writ prints the run that breaks it" "$cmp" "p2-timeout"
   has "2pc:    while every liveness property is gained" "$cmp" "must-decide             gained"
   has "2pc:    including the plain reachability one" "$cmp" "can-decide              gained"
 }
@@ -237,7 +237,7 @@ two_phase_commit() {
 access() {
   echo "== Access & privilege (kernel-spec §3) =="
   echo "   Q: is revocation always possible, or is some privilege permanent?"
-  out=$("$POL" check "$here/access/access.pol" --claims "$here/access/access.claims" 2>&1)
+  out=$("$WRIT" check "$here/access/access.writ" --claims "$here/access/access.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "access: check reports findings" "$st" 1
@@ -253,7 +253,7 @@ gotha() {
   echo "== A claim about common ownership, put to the test =="
   echo "   Q: \"once the means of production are held in common, no surplus is"
   echo "      disposed of by anyone who does not work them\" — does it survive?"
-  out=$("$POL" check "$here/gotha/gotha.pol" --claims "$here/gotha/gotha.claims" 2>&1)
+  out=$("$WRIT" check "$here/gotha/gotha.writ" --claims "$here/gotha/gotha.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "gotha: check reports findings" "$st" 1
@@ -279,7 +279,7 @@ gotha() {
   has "gotha: E. and the non-producers are named" "$out" "non-producers  (at state"
 
   echo "   Q: does the rules engine reach the same three verdicts?"
-  xc=$(POL="$POL" sh "$here/gotha/cross-check.sh" 2>&1)
+  xc=$(WRIT="$WRIT" sh "$here/gotha/cross-check.sh" 2>&1)
   xst=$?
   printf '%s\n' "$xc" | sed 's/^/     | /'
   exit_is "gotha: check and derive agree on all three" "$xst" 0
@@ -293,19 +293,19 @@ calculation() {
   echo "      which guarantees does the difference cost?"
 
   echo "   1/2: prices — the ask must be backed by the plant's own need"
-  mkt=$("$POL" check "$here/calculation/market.pol" --claims "$here/calculation/market.claims" 2>&1)
+  mkt=$("$WRIT" check "$here/calculation/market.writ" --claims "$here/calculation/market.claims" 2>&1)
   mst=$?
   printf '%s\n' "$mkt" | sed 's/^/     | /'
   exit_is "calculation: the priced model is clean" "$mst" 0
   has "calculation: A. the steel can reach a plant that needs it" "$mkt" "holds  need-can-be-met"
-  near "calculation:    and pol prints the route it takes" "$mkt" "holds  need-can-be-met" "allocate-clinic"
+  near "calculation:    and writ prints the route it takes" "$mkt" "holds  need-can-be-met" "allocate-clinic"
   has "calculation:    it is never built where it is not needed" "$mkt" "holds  no-waste"
   has "calculation:    and that stays true from every situation" "$mkt" "holds  need-always-still-meetable"
   lacks "calculation:    the model's own law is never violated" "$mkt" "violated in"
   lacks "calculation:    and nothing is unadmitted" "$mkt" "unadmitted"
 
   echo "   2/2: the plan — the same file with that one conjunct repealed"
-  pln=$("$POL" check "$here/calculation/planned.pol" --claims "$here/calculation/market.claims" 2>&1)
+  pln=$("$WRIT" check "$here/calculation/planned.writ" --claims "$here/calculation/market.claims" 2>&1)
   pst=$?
   printf '%s\n' "$pln" | sed 's/^/     | /'
   exit_is "calculation: the planned model reports findings" "$pst" 1
@@ -321,7 +321,7 @@ calculation() {
   lacks "calculation:    the same nine acknowledgments serve both models" "$pln" "unadmitted"
 
   echo "   Q: what does the repeal cost, as one command?"
-  cmp=$("$POL" compare "$here/calculation/market.pol" "$here/calculation/planned.pol" 2>&1)
+  cmp=$("$WRIT" compare "$here/calculation/market.writ" "$here/calculation/planned.writ" 2>&1)
   cst=$?
   printf '%s\n' "$cmp" | sed 's/^/     | /'
   exit_is "calculation: compare reports a loss" "$cst" 1
@@ -330,7 +330,7 @@ calculation() {
   has "calculation:    while the ability to get it right is preserved" "$cmp" "need-can-be-met             preserved"
 
   echo "   Q: does the rules engine reach the same verdicts, for BOTH models?"
-  xc=$(POL="$POL" sh "$here/calculation/cross-check.sh" 2>&1)
+  xc=$(WRIT="$WRIT" sh "$here/calculation/cross-check.sh" 2>&1)
   xst=$?
   printf '%s\n' "$xc" | sed 's/^/     | /'
   exit_is "calculation: check and derive agree on all six" "$xst" 0
@@ -343,7 +343,7 @@ arch() {
   echo "   Q: 50TB of files to classify, re-runnably, then feed AI and surface"
   echo "      in a CRM — which architectures satisfy that, and what does the"
   echo "      brief fail to say?"
-  out=$("$POL" check "$here/arch/arch.pol" --claims "$here/arch/arch.claims" 2>&1)
+  out=$("$WRIT" check "$here/arch/arch.writ" --claims "$here/arch/arch.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /' | grep -v 'reached by'
   exit_is "arch: check reports findings" "$st" 1
@@ -353,7 +353,7 @@ arch() {
   has "arch: 184 situations — the prefixes of 96 designs" "$out" "states: 184"
   has "arch: A. 96 architectures survive the constraints" "$out" "dead ends: 96"
   has "arch:    and one can be realised" "$out" "holds  realisable"
-  near "arch:    pol prints it, stage by stage" "$out" "holds  realisable" "witness:"
+  near "arch:    writ prints it, stage by stage" "$out" "holds  realisable" "witness:"
   near "arch:    starting at storage" "$out" "holds  realisable" "hold-object-store"
   has "arch: B. no partial choice strands the build" "$out" "holds  no-dead-end"
   has "arch: C. the brief is silent somewhere — a gap" "$out" "gaps: 1"
@@ -367,7 +367,7 @@ arch() {
   has "arch: E. the CRM is never coupled at the database" "$out" "holds  crm-stays-loose"
 
   echo "   Q: read one finished design out as data — what a query cannot do"
-  bp=$("$POL" derive "$here/arch/arch.pol" "$here/arch/arch.rules" \
+  bp=$("$WRIT" derive "$here/arch/arch.writ" "$here/arch/arch.rules" \
     "(blueprint 183 K C)" 2>&1)
   bst=$?
   printf '%s\n' "$bp" | sed 's/^/     | /'
@@ -378,9 +378,9 @@ arch() {
 }
 
 control() {
-  echo "== pol control — a model's dynamics as data (kernel-spec §17) =="
+  echo "== writ control — a model's dynamics as data (kernel-spec §17) =="
   echo "   Q: can we export the move list and re-use it with the same machinery?"
-  out=$("$POL" control "$here/oversight/oversight.pol" 2>&1)
+  out=$("$WRIT" control "$here/oversight/oversight.writ" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "control: emits cleanly" "$st" 0
@@ -389,32 +389,32 @@ control() {
   has "control:    ... and assign-judge" "$out" "assign-judge"
   # Prove the emitted quiver is real data: wrap it as a model and re-check it.
   tmp=$(mktemp -d)
-  printf '%s\n' "$out" >"$tmp/ctrl.pol"
-  printf '(load "ctrl.pol")\n(use quiver)\n(initial oversight-control)\n' >"$tmp/wrap.pol"
-  if (cd "$tmp" && "$POL" check wrap.pol >/dev/null 2>&1); then
+  printf '%s\n' "$out" >"$tmp/ctrl.writ"
+  printf '(load "ctrl.writ")\n(use quiver)\n(initial oversight-control)\n' >"$tmp/wrap.writ"
+  if (cd "$tmp" && "$WRIT" check wrap.writ >/dev/null 2>&1); then
     ok "control: the emitted quiver re-parses and builds"
   else bad "control: the emitted quiver did not re-parse"; fi
   rm -rf "$tmp"
 }
 
 gitcompare() {
-  echo "== pol compare --git — an amendment across commits (kernel-spec §17) =="
+  echo "== writ compare --git — an amendment across commits (kernel-spec §17) =="
   echo "   Q: two git revisions of one model — what did the amendment cost?"
   if ! command -v git >/dev/null 2>&1; then
-    printf '  [skip] pol compare --git needs git (not installed here)\n'
+    printf '  [skip] writ compare --git needs git (not installed here)\n'
     return 0
   fi
   # A self-contained history: commit the law, then commit the repeal, in a
   # throwaway repo — so the demo is deterministic and needs no shared history.
   tmp=$(mktemp -d)
-  cp "$here/oversight/oversight.pol" "$tmp/law.pol"
+  cp "$here/oversight/oversight.writ" "$tmp/law.writ"
   cp "$here/oversight/oversight.claims" "$tmp/law.claims"
-  (cd "$tmp" && git init -q && git add law.pol law.claims &&
+  (cd "$tmp" && git init -q && git add law.writ law.claims &&
     git -c user.email=t@t -c user.name=t commit -qm "v1: with restoration") >/dev/null 2>&1
-  cp "$here/oversight/oversight-repeal.pol" "$tmp/law.pol"
-  (cd "$tmp" && git add law.pol &&
+  cp "$here/oversight/oversight-repeal.writ" "$tmp/law.writ"
+  (cd "$tmp" && git add law.writ &&
     git -c user.email=t@t -c user.name=t commit -qm "amendment: repeal restoration") >/dev/null 2>&1
-  out=$(cd "$tmp" && "$POL" compare --git HEAD~1 HEAD law.pol 2>&1)
+  out=$(cd "$tmp" && "$WRIT" compare --git HEAD~1 HEAD law.writ 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "git-compare: the amendment loses a guarantee" "$st" 1
@@ -426,8 +426,8 @@ gitcompare() {
 crosscheck() {
   echo "== The modality cross-check — two implementations of one question =="
   echo "   Q: does the rules engine, asked the SAME properties over the SAME"
-  echo "      space, reach the same verdicts as \`pol check\`?"
-  out=$(POL="$POL" sh "$here/modality-cross-check.sh" 2>&1)
+  echo "      space, reach the same verdicts as \`writ check\`?"
+  out=$(WRIT="$WRIT" sh "$here/modality-cross-check.sh" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
@@ -475,30 +475,30 @@ rename_a_column() {
   echo "   Q: is this migration plan safe at EVERY instant, including the ones"
   echo "      where a rolling deploy has two releases serving at once?"
 
-  echo "   1/4: the DDL, read by \`pol sql\` — users generate SQL, not .pol"
+  echo "   1/4: the DDL, read by \`writ sql\` — users generate SQL, not .writ"
   tmp=$(mktemp -d)
   for f in 01-before 02-expand 03-contract; do
-    "$POL" sql "$here/db-migration-problems/rename-a-column/$f.sql" --with-data >"$tmp/$f.pol" 2>/dev/null
+    "$WRIT" sql "$here/db-migration-problems/rename-a-column/$f.sql" --with-data >"$tmp/$f.writ" 2>/dev/null
   done
-  exp=$(cat "$tmp/02-expand.pol")
+  exp=$(cat "$tmp/02-expand.writ")
   # The expand step's whole content is that the new column is NULLABLE, which
-  # `pol sql` writes as one character: `text?` rather than `text`.
+  # `writ sql` writes as one character: `text?` rather than `text`.
   has "rename-a-column: the expand adds the column as NULLABLE" "$exp" "(text? full-name)"
   has "rename-a-column:    while the old column stays required" "$exp" "(text name)"
-  bef=$(cat "$tmp/01-before.pol")
+  bef=$(cat "$tmp/01-before.writ")
   lacks "rename-a-column:    and before the expand it does not exist" "$bef" "full-name"
-  con=$(cat "$tmp/03-contract.pol")
+  con=$(cat "$tmp/03-contract.writ")
   lacks "rename-a-column:    after the contract the old one is gone" "$con" "(text name)"
   for f in 01-before 02-expand 03-contract; do
-    if (cd "$tmp" && "$POL" check "$f.pol" >/dev/null 2>&1); then
+    if (cd "$tmp" && "$WRIT" check "$f.writ" >/dev/null 2>&1); then
       ok "rename-a-column:    $f builds as a model"
     else bad "rename-a-column:    $f did not build"; fi
   done
   # The same expand with NOT NULL is not merely different, it is REFUSED: the
   # representative row has no value for a column that did not exist yet.
-  "$POL" sql "$here/db-migration-problems/rename-a-column/02-expand-wrong.sql" --with-data \
-    >"$tmp/wrong.pol" 2>/dev/null
-  wrong=$(cd "$tmp" && "$POL" check wrong.pol 2>&1)
+  "$WRIT" sql "$here/db-migration-problems/rename-a-column/02-expand-wrong.sql" --with-data \
+    >"$tmp/wrong.writ" 2>/dev/null
+  wrong=$(cd "$tmp" && "$WRIT" check wrong.writ 2>&1)
   wst=$?
   printf '%s\n' "$wrong" | sed 's/^/     | /'
   exit_is "rename-a-column: NOT NULL on the new column is refused" "$wst" 2
@@ -506,29 +506,29 @@ rename_a_column() {
   rm -rf "$tmp"
 
   echo "   2/4: the plan"
-  mg=$("$POL" check "$here/db-migration-problems/rename-a-column/rename-a-column.pol" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
+  mg=$("$WRIT" check "$here/db-migration-problems/rename-a-column/rename-a-column.writ" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
   mst=$?
   printf '%s\n' "$mg" | sed 's/^/     | /'
   exit_is "rename-a-column: the plan is clean" "$mst" 0
   has "rename-a-column: A. the rename can be finished" "$mg" "holds  completes"
-  near "rename-a-column:    and pol prints the runbook, which nobody wrote" "$mg" "holds  completes" "add-column"
+  near "rename-a-column:    and writ prints the runbook, which nobody wrote" "$mg" "holds  completes" "add-column"
   near "rename-a-column:    the backfill comes before the readers switch" "$mg" "holds  completes" "backfill"
   has "rename-a-column: B. and no step strands production half-migrated" "$mg" "holds  no-dead-ends"
   lacks "rename-a-column:    no law is violated" "$mg" "violated in"
   lacks "rename-a-column:    and every breakable law is acknowledged" "$mg" "unadmitted"
 
   echo "   3/4: the shortcut — the same file, ONE conjunct lighter"
-  sc=$("$POL" check "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.pol" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
+  sc=$("$WRIT" check "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.writ" --claims "$here/db-migration-problems/rename-a-column/rename-a-column.claims" 2>&1)
   sst=$?
   printf '%s\n' "$sc" | sed 's/^/     | /'
   exit_is "rename-a-column: the shortcut reports findings" "$sst" 1
   has "rename-a-column: C. a reader goes out before the backfill" "$sc" "violated in 5 reachable situations"
-  near "rename-a-column:    and pol names the step that does it" "$sc" "violated in 5 reachable situations" "deploy-r3"
+  near "rename-a-column:    and writ names the step that does it" "$sc" "violated in 5 reachable situations" "deploy-r3"
   has "rename-a-column: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
   has "rename-a-column:    and it never strands you either" "$sc" "holds  no-dead-ends"
 
   echo "   4/4: the verb that does NOT catch it"
-  cm=$("$POL" compare "$here/db-migration-problems/rename-a-column/rename-a-column.pol" "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.pol" 2>&1)
+  cm=$("$WRIT" compare "$here/db-migration-problems/rename-a-column/rename-a-column.writ" "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.writ" 2>&1)
   cst=$?
   printf '%s\n' "$cm" | sed 's/^/     | /'
   exit_is "rename-a-column: compare is content" "$cst" 0
@@ -543,7 +543,7 @@ drop_a_column() {
   d="$here/db-migration-problems/drop-a-column"
   echo "== Dropping a column that is still being read =="
   echo "   Q: how many moves from a normal-looking plan to an outage?"
-  ok_=$("$POL" check "$d/drop-a-column.pol" --claims "$d/drop-a-column.claims" 2>&1)
+  ok_=$("$WRIT" check "$d/drop-a-column.writ" --claims "$d/drop-a-column.claims" 2>&1)
   ost=$?
   printf '%s\n' "$ok_" | sed 's/^/     | /'
   exit_is "drop-a-column: the plan is clean" "$ost" 0
@@ -552,7 +552,7 @@ drop_a_column() {
   has "drop-a-column: B. and no step strands you" "$ok_" "holds  no-dead-ends"
   lacks "drop-a-column:    nothing is violated" "$ok_" "violated in"
 
-  sc=$("$POL" check "$d/drop-a-column-shortcut.pol" --claims "$d/drop-a-column.claims" 2>&1)
+  sc=$("$WRIT" check "$d/drop-a-column-shortcut.writ" --claims "$d/drop-a-column.claims" 2>&1)
   sst=$?
   printf '%s\n' "$sc" | sed 's/^/     | /'
   exit_is "drop-a-column: dropping mid-rollout is refused" "$sst" 1
@@ -567,11 +567,11 @@ add_a_required_column() {
   echo "== Making a column required, before the code can keep the promise =="
   echo "   Q: NOT NULL is a promise about rows that do not exist yet — who checks it?"
   tmp=$(mktemp -d)
-  "$POL" sql "$d/02-add-nullable.sql" --with-data >"$tmp/step2.pol" 2>/dev/null
-  has "add-a-required-column: the column arrives NULLABLE" "$(cat "$tmp/step2.pol")" "(text? country)"
+  "$WRIT" sql "$d/02-add-nullable.sql" --with-data >"$tmp/step2.writ" 2>/dev/null
+  has "add-a-required-column: the column arrives NULLABLE" "$(cat "$tmp/step2.writ")" "(text? country)"
   rm -rf "$tmp"
 
-  ok_=$("$POL" check "$d/add-a-required-column.pol" --claims "$d/add-a-required-column.claims" 2>&1)
+  ok_=$("$WRIT" check "$d/add-a-required-column.writ" --claims "$d/add-a-required-column.claims" 2>&1)
   ost=$?
   printf '%s\n' "$ok_" | sed 's/^/     | /'
   exit_is "add-a-required-column: the plan is clean" "$ost" 0
@@ -580,7 +580,7 @@ add_a_required_column() {
   has "add-a-required-column: B. and no step strands you" "$ok_" "holds  no-dead-ends"
   lacks "add-a-required-column:    nothing is violated" "$ok_" "violated in"
 
-  sc=$("$POL" check "$d/add-a-required-column-shortcut.pol" --claims "$d/add-a-required-column.claims" 2>&1)
+  sc=$("$WRIT" check "$d/add-a-required-column-shortcut.writ" --claims "$d/add-a-required-column.claims" 2>&1)
   sst=$?
   printf '%s\n' "$sc" | sed 's/^/     | /'
   exit_is "add-a-required-column: constraining before deploying is refused" "$sst" 1
@@ -626,7 +626,7 @@ timetable() {
   echo "== A timetable a CP-SAT solver decided =="
   echo "   Q: does it deliver the curriculum, could a school live with it, and"
   echo "      what did the curriculum forget to say?"
-  out=$("$POL" check "$here/timetable/timetable.pol" --claims "$here/timetable/timetable.claims" 2>&1)
+  out=$("$WRIT" check "$here/timetable/timetable.writ" --claims "$here/timetable/timetable.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "timetable: check reports findings" "$st" 1
@@ -643,7 +643,7 @@ timetable() {
   has "timetable:    may two hours of one subject fall on one day?" "$out" "doubling-unstated"
 
   # The SAME question suite, put to the week solved with those findings encoded.
-  out=$("$POL" check "$here/timetable/timetable-strict.pol" --claims "$here/timetable/timetable.claims" 2>&1)
+  out=$("$WRIT" check "$here/timetable/timetable-strict.writ" --claims "$here/timetable/timetable.claims" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "timetable: D. the tightened week has nothing to report" "$st" 0
@@ -651,7 +651,7 @@ timetable() {
   has "timetable:    and no silence is reached" "$out" "gaps: none"
 
   # And the difference between the two weeks is a tool operation.
-  out=$("$POL" compare "$here/timetable/timetable.pol" "$here/timetable/timetable-strict.pol" 2>&1)
+  out=$("$WRIT" compare "$here/timetable/timetable.writ" "$here/timetable/timetable-strict.writ" 2>&1)
   printf '%s\n' "$out" | sed 's/^/     | /'
   has "timetable: E. the school rules were GAINED" "$out" "sport-not-first             gained"
   has "timetable:    and nothing was lost to buy them" "$out" "curriculum-delivered        preserved"

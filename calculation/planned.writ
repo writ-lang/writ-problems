@@ -1,0 +1,69 @@
+; THE PLANNED ECONOMY. One allotment of steel, three plants, and a centre that
+; decides where it goes.
+;
+; This is `market.writ` with ONE conjunct repealed, and it is written as a repeal
+; on purpose — the way `oversight-repeal.writ` is written against `oversight.writ`
+; — so that `writ compare market.writ planned.writ` can name what the repeal costs.
+;
+; Everything about the world — the plants, which of them genuinely needs the
+; steel, the allocation rule, the fact that steel welded into a building stays
+; welded into it — lives in ../libraries/economy.lib.writ and is IDENTICAL to
+; `market.writ` next door. This file contributes one thing the library does not:
+; the move that produces the signal the allocator reads.
+;
+; Here, a request is FREE. A plant tells the centre it needs the steel by
+; saying so. Saying so costs the plant nothing, so the guard on the move that
+; says it cannot mention what the plant actually needs — there is nothing to
+; mention it WITH. `(when (not (is P.ask high)))`: any plant, any time.
+;
+; That is the whole model of central planning, and it is deliberately the most
+; favourable one. This centre is not corrupt, not lazy and not malicious; the
+; plants are not lying, since nothing here says a plant knows its request is
+; unwarranted. The centre may reallocate as often as it likes, right up until
+; the steel is built. Both files declare the same twelve moves under the same
+; twelve names, and every move that can ever fire in `market.writ` can fire here
+; — plus three that cannot fire there: the monument's request, and the two
+; withdrawals a plant that does need the steel has no grounds to make.
+;
+; What it does not have is a way for the centre to find out what the requests do
+; not carry. That absence is written down, at the bottom, as a `gap`.
+
+(load "../libraries/economy.lib.writ")
+
+(use economy)
+(initial year-one)
+
+; THE SIGNAL: a request. The guard says only that the plant is not already
+; asking — no mention of `P.need`, because a costless request cannot carry it.
+; This is the one datum that differs from market.writ.
+(form (request NAME P LEVEL)
+  (transition NAME
+    (when (not (is P.ask LEVEL)))
+    (do (set P.ask LEVEL))))
+
+(request ask-clinic-high   clinic        high)
+(request ask-clinic-low    clinic        low)
+(request ask-tractor-high  tractor-works high)
+(request ask-tractor-low   tractor-works low)
+(request ask-monument-high monument      high)
+(request ask-monument-low  monument      low)
+
+; THE ALLOCATION and the COMMITMENT, from the library — byte-identical to
+; market.writ, down to the transition names, which is what lets one claims file
+; be put to both.
+(allocate allocate-clinic   clinic)
+(allocate allocate-tractor  tractor-works)
+(allocate allocate-monument monument)
+
+(build build-clinic   clinic)
+(build build-tractor  tractor-works)
+(build build-monument monument)
+
+; WHERE THE RULES STOP. The centre would like to know which plant actually needs
+; the steel — not which has asked. There is no move here that finds out, and the
+; honest thing is to say so rather than invent one: a plan is a procedure, and
+; this procedure has no step that reads a `need`. The gap is the economic
+; calculation problem, written in the one word the language has for it.
+(transition survey
+  (when (is steel.state idle))
+  (do (gap "the plan has no procedure by which the centre could learn a need that no request carries")))

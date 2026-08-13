@@ -16,7 +16,7 @@
   "the assignee slot can always still be filled"
   (live (defined claim-1.assignee)))
 
-; Which reassignment moves can break the unit-of-record law? `pol check` reports
+; Which reassignment moves can break the unit-of-record law? `writ check` reports
 ; officer-in-unit can be broken by reassign-to-fraud and reassign-to-kyc (both
 ; write case.officer, an arrow the law's route traverses). We acknowledge both,
 ; recording ownership (§16.3). settle / assign / escalate touch none of the

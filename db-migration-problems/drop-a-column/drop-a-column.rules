@@ -1,4 +1,4 @@
-; The same two questions, answered a second time by a different part of `pol`.
+; The same two questions, answered a second time by a different part of `writ`.
 ;
 ; This file is not a replacement for the claims file. `modality-cross-check.sh`
 ; runs both and compares them; the two share no code, so a disagreement is a

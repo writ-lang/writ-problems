@@ -1,4 +1,4 @@
-; The same two questions, answered a second time by a different part of `pol`,
+; The same two questions, answered a second time by a different part of `writ`,
 ; so that `modality-cross-check.sh` can compare them. The two share no code; a
 ; disagreement is a bug in one of them, not a number to adjust.
 ;

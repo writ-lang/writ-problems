@@ -1,6 +1,6 @@
-# Every scenario as a service, over the image the pol repository builds.
+# Every scenario as a service, over the image the writ repository builds.
 #
-#   in a pol checkout:   make image          # tags pol:latest, once
+#   in a writ checkout:   make image          # tags writ:latest, once
 #   here:                docker compose up   # every scenario
 #                        docker compose run --rm river
 #
@@ -8,78 +8,78 @@
 # pass/fail run of the whole suite and needs nothing on the host but Docker.
 #
 # Point at a published engine image instead when there is one:
-#   docker compose build --build-arg POL_IMAGE=ghcr.io/sajonaro/pol:0.1.0
+#   docker compose build --build-arg WRIT_IMAGE=ghcr.io/writ-lang/writ:0.1.0
 
 services:
   # The Prologue river crossing: a solution path, and the blunder `live` finds.
   river:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["river"]
 
   # Knights & knaves — the reading that makes the story consistent.
   island:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["island"]
 
   # Eight queens in fifteen lines over a domain library; all 92 boards.
   queens:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["queens"]
 
   # A blocking job shop: CAN every job finish? Finds the three-way deadlock.
   jobshop-possible:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["jobshop_possible"]
 
   # The same shop with a clock: WHICH schedule is shortest? Optimum pinned from both sides.
   jobshop-best:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["jobshop_best"]
 
-  # Institutional architecture — laws, acknowledgments, and `pol compare` across an amendment.
+  # Institutional architecture — laws, acknowledgments, and `writ compare` across an amendment.
   oversight:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["oversight"]
 
   # A regulated workflow: a declared `gap` where the rules stop.
   workflow:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["workflow"]
 
   # Access and privilege, including a one-way latch.
   access:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["access"]
 
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["timetable"]
 
-  # `pol control` — a model's dynamics emitted as data, then re-checked.
+  # `writ control` — a model's dynamics emitted as data, then re-checked.
   control:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["control"]
 
-  # `pol compare --git` over a throwaway two-commit history.
+  # `writ compare --git` over a throwaway two-commit history.
   gitcompare:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["gitcompare"]
 
-  # Both instruments over all sixteen properties: `pol check` against `pol derive`.
+  # Both instruments over all sixteen properties: `writ check` against `writ derive`.
   crosscheck:
     build: .
-    image: pol-problems
+    image: writ-problems
     command: ["crosscheck"]

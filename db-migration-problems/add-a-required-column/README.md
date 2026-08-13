@@ -3,7 +3,7 @@
 This directory holds a worked example. It checks whether a plan for making a
 database column mandatory is safe, and it refuses a plan that is not.
 
-You do not need to know anything about `pol` to read this page. Every term is
+You do not need to know anything about `writ` to read this page. Every term is
 explained where it appears, and there is a glossary at the end.
 
 ---
@@ -123,11 +123,11 @@ Three files, one per database step:
 Each also carries one representative row, so each file can be checked on its
 own rather than only meaning something beside the others.
 
-`pol sql` turns a `.sql` file into a model and `pol check` builds it:
+`writ sql` turns a `.sql` file into a model and `writ check` builds it:
 
 ```console
-$ pol sql 02-add-nullable.sql --with-data > step2.pol
-$ pol check step2.pol
+$ writ sql 02-add-nullable.sql --with-data > step2.writ
+$ writ check step2.writ
 states: 1   edges: 0
 ```
 
@@ -140,7 +140,7 @@ Inside the generated file, the table looks like this:
 ```
 
 The question mark on `text?` means the column is allowed to be `NULL`. Without
-it, the column is required. That one character is how `pol` writes the
+it, the column is required. That one character is how `writ` writes the
 difference between the second file and the third.
 
 ### All three files are correct
@@ -170,8 +170,8 @@ only reporting that one exists.
 
 Two files describe two plans:
 
-- `add-a-required-column.pol` — a plan that is safe.
-- `add-a-required-column-shortcut.pol` — the same plan with **one condition
+- `add-a-required-column.writ` — a plan that is safe.
+- `add-a-required-column-shortcut.writ` — the same plan with **one condition
   removed** from the last step.
 
 Both are asked the same questions, from the same file, so any difference in the
@@ -181,15 +181,15 @@ answers comes from that one condition.
 
 ## 6. Running it
 
-You need `pol` installed. If you do not have it, see the
-[install instructions](https://github.com/sajonaro/pol#install); the short
-version is `opam pin add pol git+https://github.com/sajonaro/pol.git`.
+You need `writ` installed. If you do not have it, see the
+[install instructions](https://github.com/writ-lang/writ#install); the short
+version is `opam pin add writ git+https://github.com/writ-lang/writ.git`.
 
 From this directory:
 
 ```console
-$ pol check add-a-required-column.pol --claims add-a-required-column.claims
-$ pol check add-a-required-column-shortcut.pol --claims add-a-required-column.claims
+$ writ check add-a-required-column.writ --claims add-a-required-column.claims
+$ writ check add-a-required-column-shortcut.writ --claims add-a-required-column.claims
 ```
 
 Both use the same questions file.
@@ -261,7 +261,7 @@ you leave any out, the exit code becomes 1.
 
 `completes` asks whether it is possible to get all the way to the end: column
 present, every row filled, constraint on. Yes — and the five steps printed
-underneath are the route `pol` found.
+underneath are the route `writ` found.
 
 | # | step | what happens |
 | --- | --- | --- |
@@ -316,7 +316,7 @@ watching it.
 
 ## 9. The shortcut
 
-`add-a-required-column-shortcut.pol` is the same file with the second condition
+`add-a-required-column-shortcut.writ` is the same file with the second condition
 deleted:
 
 ```lisp
@@ -333,7 +333,7 @@ wrong.
 That is exactly why this mistake is easy. It is not carelessness. It is
 guarding the half you were trained to guard.
 
-### What `pol` says
+### What `writ` says
 
 ```
 states: 10   edges: 13
@@ -385,16 +385,16 @@ exactly what makes it shorter, and exactly what makes it wrong.
 
 ## 10. Using it as a gate
 
-`pol check` exits 0 when it finds nothing and 1 when it does:
+`writ check` exits 0 when it finds nothing and 1 when it does:
 
 ```sh
-pol check add-a-required-column.pol --claims add-a-required-column.claims
+writ check add-a-required-column.writ --claims add-a-required-column.claims
 ```
 
 If the exit code is 1 the build fails, and the output names the rule, counts
 the affected situations, and prints the shortest route to one.
 
-Do not use `pol compare` for this. It answers "which guarantees did this version
+Do not use `writ compare` for this. It answers "which guarantees did this version
 give up?", and the shortcut gave none up — it declares all three rules and
 satisfies both properties. It simply breaks one of the rules it declares, and
 that is what `check` is for.
@@ -431,7 +431,7 @@ remembers, each of which is a place a row can be created without a country.
 **4. Usually nothing in the rules.** They are about columns and releases in
 general rather than about your particular column.
 
-If you add a step, `pol` will report it unacknowledged and exit 1 until the
+If you add a step, `writ` will report it unacknowledged and exit 1 until the
 questions file says you have considered which rules it could affect.
 
 ---
@@ -441,12 +441,12 @@ questions file says you have considered which rules it could affect.
 Skippable. For readers who want the model rather than the result.
 
 **Everything is a state machine.** You describe what exists, one starting
-situation, and the possible moves. `pol` works out every reachable situation and
+situation, and the possible moves. `writ` works out every reachable situation and
 answers questions about all of them.
 
 **Moves are the operator's; rules are separate.** If the rules were conditions
 on the moves, an unsafe move would simply be impossible and you would learn
-nothing. Keeping them apart lets `pol` say a move is *allowed by your plan* but
+nothing. Keeping them apart lets `writ` say a move is *allowed by your plan* but
 *breaks a rule*.
 
 **A release writes several columns**, so the write set is a list of small
@@ -466,14 +466,14 @@ the right one is what keeps it short.
 | file | what it is |
 | --- | --- |
 | `01-before.sql`, `02-add-nullable.sql`, `03-required.sql` | the three schemas, each with one row |
-| `add-a-required-column.pol` | the safe plan |
-| `add-a-required-column-shortcut.pol` | the same, one condition lighter |
+| `add-a-required-column.writ` | the safe plan |
+| `add-a-required-column-shortcut.writ` | the same, one condition lighter |
 | `add-a-required-column.claims` | the questions, and the acknowledgements |
-| `add-a-required-column.lib.pol` | definitions shared by model and questions |
+| `add-a-required-column.lib.writ` | definitions shared by model and questions |
 | `add-a-required-column.rules` | the same questions written a second way |
 
 The last is a cross-check: the two questions get answered twice, by parts of
-`pol` that share no code, so a disagreement means one of them has a bug.
+`writ` that share no code, so a disagreement means one of them has a bug.
 
 ---
 
@@ -524,4 +524,4 @@ serve traffic at the same time.
 
 **transition** — one move, with a condition saying when it is allowed.
 
-**witness** — the concrete route `pol` prints to back up an answer.
+**witness** — the concrete route `writ` prints to back up an answer.

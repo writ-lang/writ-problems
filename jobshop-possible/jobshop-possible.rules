@@ -11,7 +11,7 @@
 ;   can still finish" would read as the satisfying set and silently invert the
 ;   oracle — every live verdict backwards, the script still green.
 
-(load "../libraries/scheduling.lib.pol")
+(load "../libraries/scheduling.lib.writ")
 
 ; Reachability over real edges, reflexive at every situation.
 (load "ct.rules")
@@ -28,7 +28,7 @@
 (trapped never-stuck can-still-finish)
 
 ; The per-machine view the conjunctions above cannot give: who holds what, in a
-; given situation. `pol derive jobshop.pol jobshop.rules "(holds-machine S M J)"`
+; given situation. `writ derive jobshop.writ jobshop.rules "(holds-machine S M J)"`
 ; reads a deadlock off the space. The typed declaration is required, not
 ; decorative: `M` and `J` occur only in sort-transparent positions here, so
 ; nothing else in the rule could seed them.

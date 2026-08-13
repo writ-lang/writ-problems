@@ -1,4 +1,4 @@
-(load "stdlib.pol")
+(load "stdlib.writ")
 
 ; The questions about two-phase commit, kept beside the model and asked of every
 ; variant of it — which is the point of a claims file being a separate document.

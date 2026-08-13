@@ -44,7 +44,7 @@
 (rule (choice S K C) (situation S) (holds S (is K.chosen C)))
 
 ; stage -> part, for finished architectures only: the machine-readable artifact.
-;   pol derive arch.pol arch.rules "(blueprint 183 K C)"
+;   writ derive arch.writ arch.rules "(blueprint 183 K C)"
 (relation blueprint (Situation cap comp))
 (rule (blueprint S K C) (realisable S) (choice S K C))
 

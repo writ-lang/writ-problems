@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # The modality cross-check — two implementations of one question.
 #
-# `pol check` answers a `.claims` property with the checker's CTL reading
-# (runtime/checker.ml). `pol derive` answers the SAME property, over the SAME
+# `writ check` answers a `.claims` property with the checker's CTL reading
+# (runtime/checker.ml). `writ derive` answers the SAME property, over the SAME
 # enumerated space, from a hand-written `.rules` encoding beside each scenario
 # (extension §2: "the modalities become two-line derivations"). This script runs
 # both and compares them. It is the only test in the repo whose oracle is not a
@@ -27,12 +27,12 @@
 # name a missing arrow and the file would be rejected at read time). Skipped
 # properties are counted so the coverage line stays honest.
 #
-# Usage:  modality-cross-check.sh          (`pol` is taken from $POL, as
+# Usage:  modality-cross-check.sh          (`writ` is taken from $WRIT, as
 #                                           run-tests.sh does; default: PATH)
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-POL=${POL:-pol}
+WRIT=${WRIT:-writ}
 
 scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch two-phase-commit db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column"
 
@@ -88,7 +88,7 @@ props() {
     }' "$1"
 }
 
-# What `pol check` says about one property: report.ml prints `holds  NAME`,
+# What `writ check` says about one property: report.ml prints `holds  NAME`,
 # `fails  NAME` or `n/a  NAME` on a line of its own (witnesses are indented).
 verdict() { # check-output  name
   if printf '%s\n' "$1" | grep -qx "holds  $2"; then
@@ -107,7 +107,7 @@ for s in $scenarios; do
   # — in which case the files are named after the LAST segment, not the whole
   # path. `basename` covers both shapes with no special case.
   b=$(basename "$s")
-  model="$here/$s/$b.pol"
+  model="$here/$s/$b.writ"
   claims="$here/$s/$b.claims"
   rules="$here/$s/$b.rules"
   echo "== $s =="
@@ -115,7 +115,7 @@ for s in $scenarios; do
     no "$s: no $s.rules beside the scenario — nothing to cross-check against"
     continue
   fi
-  check=$("$POL" check "$model" --claims "$claims" 2>&1)
+  check=$("$WRIT" check "$model" --claims "$claims" 2>&1)
 
   list=$(props "$claims")
   printf '%s\n' "$list" | grep -q . || {
@@ -149,18 +149,18 @@ for s in $scenarios; do
     said=$(verdict "$check" "$name")
     if [ "$said" = na ]; then
       skipped=$((skipped + 1))
-      ok "$s/$name  $modality: pol check says n/a — skipped, not compared"
+      ok "$s/$name  $modality: writ check says n/a — skipped, not compared"
       continue
     fi
     if [ "$said" = unreported ]; then
-      no "$s/$name  pol check reported no verdict at all"
+      no "$s/$name  writ check reported no verdict at all"
       continue
     fi
 
-    out=$("$POL" derive "$model" "$rules" "$name" 2>&1)
+    out=$("$WRIT" derive "$model" "$rules" "$name" 2>&1)
     st=$?
     if [ "$st" -ne 0 ]; then
-      no "$s/$name  pol derive exited $st: $(printf '%s\n' "$out" | head -1)"
+      no "$s/$name  writ derive exited $st: $(printf '%s\n' "$out" | head -1)"
       continue
     fi
     rows=$(printf '%s\n' "$out" | grep -c '^  ')
@@ -185,7 +185,7 @@ for s in $scenarios; do
     if [ "$derived" = "$said" ]; then
       ok "$s/$name  $modality: $what $rows — both say $said"
     else
-      no "$s/$name  $modality: $what $rows ⇒ the rules engine says $derived, but pol check says $said"
+      no "$s/$name  $modality: $what $rows ⇒ the rules engine says $derived, but writ check says $said"
     fi
   done <<EOF
 $list
@@ -193,7 +193,7 @@ EOF
 done
 
 echo
-# Two reasons a property is not compared, and neither is a failure: `pol check`
+# Two reasons a property is not compared, and neither is a failure: `writ check`
 # said n/a, or the property carries a fairness clause the rules encoding does
 # not model. Counted together, because what the line is for is the arithmetic —
 # considered = compared + skipped, so nothing fell out silently.
@@ -218,7 +218,7 @@ if [ "$compared" -eq 0 ]; then
 fi
 
 if [ "$bad" -eq 0 ]; then
-  echo "the rules engine and pol check agree on all $compared compared properties"
+  echo "the rules engine and writ check agree on all $compared compared properties"
 else
   echo "$bad DISAGREEMENT(S) — a finding to report, not a number to adjust"
 fi

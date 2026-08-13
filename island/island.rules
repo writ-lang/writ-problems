@@ -1,5 +1,5 @@
 ; The census questions, re-asked as derivations (extension §2), so that
-; `modality-cross-check.sh` can hold the rules engine and `pol check` up against
+; `modality-cross-check.sh` can hold the rules engine and `writ check` up against
 ; each other on island.claims's four properties.
 ;
 ; POLARITY. All four are `possible`, which is the one modality with a POSITIVE

@@ -1,6 +1,6 @@
 ; The questions, put to both plans.
 
-(load "add-a-required-column.lib.pol")
+(load "add-a-required-column.lib.writ")
 
 (property completes
   "the column can end up existing, filled in, and required"

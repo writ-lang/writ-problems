@@ -1,7 +1,7 @@
 ; The river crossing's two claims, re-asked as derivations (extension §2).
 ;
 ; This file exists to be CHECKED AGAINST river.claims, not to replace it:
-; `pol check` answers `solvable` and `no-blunders` with the checker's own CTL
+; `writ check` answers `solvable` and `no-blunders` with the checker's own CTL
 ; reading, and `modality-cross-check.sh` re-asks the same two questions of the
 ; rules engine. Two implementations of one question; a disagreement is a bug in
 ; one of them.
@@ -45,8 +45,8 @@
 ; Everything above roots its paths at a named constant — `farmer.at`, `wolf.at`
 ; — so the fixpoint reads each root's type straight out of the roster. The
 ; moment a path is rooted at a VARIABLE, that stops working here: arrow names
-; are dom-scoped (kernel §7), and river.pol gives the name `at` to both
-; `traveler` and `cargo` (river.pol:22,24). An ambiguous name seeds nothing, and
+; are dom-scoped (kernel §7), and river.writ gives the name `at` to both
+; `traveler` and `cargo` (river.writ:22,24). An ambiguous name seeds nothing, and
 ; constants never seed, so `X` below has no sort to be found anywhere in the
 ; rule — `(relation across 2)` is rejected at the variable.
 ;
@@ -57,7 +57,7 @@
 ;
 ; What it buys, beyond the syntax: the per-item view the all-four conjunctions
 ; above cannot give. `intact` is one bit per situation; `across` is the crossing
-; in progress, and `pol derive river.pol river.rules "(across 34 X)"` reads off
+; in progress, and `writ derive river.writ river.rules "(across 34 X)"` reads off
 ; who is over at the end.
 (relation across (Situation cargo))
 (rule (across S X) (situation S) (holds S (is X.at right)))

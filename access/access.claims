@@ -12,7 +12,7 @@
   "admin can always still be fully revoked (no account left admin)"
   (live (not (some (a account) (is a.role admin)))))
 
-; Which grant moves can break the root-tracing law? `pol check` reports
+; Which grant moves can break the root-tracing law? `writ check` reports
 ; traces-to-root can be broken by delegate-alice-to-mallory (it writes
 ; account.sponsor, an arrow the law's route traverses). We acknowledge it,
 ; recording ownership (§16.3). The role grants write account.role, not on the

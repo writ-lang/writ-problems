@@ -2,23 +2,23 @@
 
 *A pair of models that differ in exactly one guard, asked exactly the same
 questions. The priced one holds all three. The planned one loses two of them,
-and `pol` names the three moves that lose them.*
+and `writ` names the three moves that lose them.*
 
 ## The files
 
 | file | what it is |
 | --- | --- |
-| [`../libraries/economy.lib.pol`](../libraries/economy.lib.pol) | the world both models share: plants, needs, the allotment, the allocation rule, the commitment rule, the law |
-| [`market.pol`](market.pol) | the base — the ask must be backed by the asking plant's own need |
-| [`planned.pol`](planned.pol) | the same file with that one conjunct repealed |
+| [`../libraries/economy.lib.writ`](../libraries/economy.lib.writ) | the world both models share: plants, needs, the allotment, the allocation rule, the commitment rule, the law |
+| [`market.writ`](market.writ) | the base — the ask must be backed by the asking plant's own need |
+| [`planned.writ`](planned.writ) | the same file with that one conjunct repealed |
 | [`market.claims`](market.claims) | the three questions and the nine acknowledgments, put to **both** models unchanged |
 | [`market.rules`](market.rules) | the same three questions re-asked relationally |
 | [`cross-check.sh`](cross-check.sh) | runs both engines over both models and compares the six verdicts |
 
 ```console
-$ pol check   market.pol  --claims market.claims
-$ pol check   planned.pol --claims market.claims
-$ pol compare market.pol  planned.pol
+$ writ check   market.writ  --claims market.claims
+$ writ check   planned.writ --claims market.claims
+$ writ compare market.writ  planned.writ
 $ ../run-tests.sh calculation
 ```
 
@@ -35,11 +35,11 @@ A quantity of steel exists. Three plants could use it:
 Only one of them can have it. So somebody has to decide, and the decision needs
 a fact: **how badly each plant needs the steel**. In the model that fact is
 `plant.need`, and it is `fixed` — wiring, a feature of the world, not something
-any move can change. It is in the model. `pol query market.pol who-needs-it`
+any move can change. It is in the model. `writ query market.writ who-needs-it`
 prints it:
 
 ```console
-$ pol query market.pol who-needs-it
+$ writ query market.writ who-needs-it
 who-needs-it  (at state 0)
   p = clinic
   p = tractor-works
@@ -56,20 +56,20 @@ how each arrangement tries to close it.
 
 ## The two arrangements, and the one line that separates them
 
-Both models load [`../libraries/economy.lib.pol`](../libraries/economy.lib.pol),
+Both models load [`../libraries/economy.lib.writ`](../libraries/economy.lib.writ),
 which holds the plants, their needs, the allotment, the allocation rule, the
 commitment rule and the law. Both then declare the same twelve moves under the
 same twelve names. They differ in one form:
 
 ```lisp
-;; planned.pol — a request. Saying you need the steel costs nothing,
+;; planned.writ — a request. Saying you need the steel costs nothing,
 ;;               so the guard has nothing to bind the saying to.
 (form (request NAME P LEVEL)
   (transition NAME
     (when (not (is P.ask LEVEL)))
     (do (set P.ask LEVEL))))
 
-;; market.pol — a bid. Asking means offering to pay out of the plant's own
+;; market.writ — a bid. Asking means offering to pay out of the plant's own
 ;;              budget, so the move is not available to a plant with no need.
 (form (request NAME P LEVEL)
   (transition NAME
@@ -78,9 +78,9 @@ same twelve names. They differ in one form:
     (do (set P.ask LEVEL))))
 ```
 
-One conjunct. `planned.pol` is written as the **repeal** of it — the way
-[`../oversight/oversight-repeal.pol`](../oversight/oversight-repeal.pol) is
-written against its base — so that `pol compare` can price the repeal.
+One conjunct. `planned.writ` is written as the **repeal** of it — the way
+[`../oversight/oversight-repeal.writ`](../oversight/oversight-repeal.writ) is
+written against its base — so that `writ compare` can price the repeal.
 
 That conjunct is the only claim being made about prices anywhere in this
 scenario, and it is worth stating flatly. It does **not** say markets are
@@ -90,12 +90,12 @@ situation.* Whether that is a fair reading of a budget constraint is a question
 about the premise, and the premise is the one thing the tool does not check.
 What the tool checks is what follows.
 
-## What `pol` answers
+## What `writ` answers
 
-### The priced economy — `market.pol`
+### The priced economy — `market.writ`
 
 ```console
-$ pol check market.pol --claims market.claims
+$ writ check market.writ --claims market.claims
 states: 12   edges: 18
 gaps: none
 dead ends: 2
@@ -116,10 +116,10 @@ $ echo $?
 Twelve situations, two ways it can end, and both of them end with the steel in
 a plant that needed it.
 
-### The planned economy — `planned.pol`, the same questions
+### The planned economy — `planned.writ`, the same questions
 
 ```console
-$ pol check planned.pol --claims market.claims
+$ writ check planned.writ --claims market.claims
 states: 56   edges: 260
 gaps: 1
   survey — "the plan has no procedure by which the centre could learn a need that no request carries" (min 0 moves)
@@ -147,7 +147,7 @@ $ echo $?
 ### And what the repeal costs, as one command
 
 ```console
-$ pol compare market.pol planned.pol
+$ writ compare market.writ planned.writ
 equations:   signal-honest               preserved
 properties:  need-can-be-met             preserved
              no-waste                    LOST      witness: 1. ask-monument-high 2. allocate-monument 3. build-monument
@@ -162,7 +162,7 @@ others cannot.
 **1. `need-can-be-met` — holds in both.** *The steel can end up built at a plant
 that needed it.* This is the question that clears the plan of the accusation
 usually thrown at it. The centre is not incompetent; the plan is not incapable;
-there is a route, three moves long, and `pol` prints it. Any argument that has
+there is a route, three moves long, and `writ` prints it. Any argument that has
 to begin "planners are stupid" is not the argument here, and this line is what
 retires it.
 
@@ -170,7 +170,7 @@ retires it.
 never built at a plant that does not need it.* The monument asks, and asking is
 free. The allocator sees a request identical in every respect to the clinic's,
 because at the allocator's end **it is** identical — a request is a request.
-The steel goes to the monument. Three moves; `pol` names them.
+The steel goes to the monument. Three moves; `writ` names them.
 
 Under prices the same three moves are written down, `allocate-monument`
 included, and nothing forbids them. The first one just never becomes available,
@@ -189,7 +189,7 @@ nobody in the model can undo.
 
 ## Three things in the output worth not skipping
 
-**The gap.** `planned.pol` carries one declared hole:
+**The gap.** `planned.writ` carries one declared hole:
 
 ```lisp
 (transition survey
@@ -203,14 +203,14 @@ the single word the language has for it. The centre would like to know which
 plant actually needs the steel. Write the move that finds out, and the model
 gets better; but you cannot write it out of the pieces this arrangement has,
 because a plan is a procedure and this procedure has no step that reads a
-`need`. `market.pol` has no gap, and not because it was let off: its channel is
+`need`. `market.writ` has no gap, and not because it was let off: its channel is
 specified, and it is the bid.
 
 **The law it breaks is its own.** `signal-honest` — *the plant holding the steel
 is one whose signal matches its situation* — is declared once, in the shared
 library, and inherited by both models. The priced model never reaches a state
 that violates it. The planned model violates it in **24 of its 56 situations**,
-and `pol` prints the two moves that get there. Note that `can be broken by`
+and `writ` prints the two moves that get there. Note that `can be broken by`
 lists the same nine moves in both files: that line is about what a move
 *writes*, not about what is reachable. Both models are handed the same ledger,
 and both acknowledge the same nine moves in
@@ -233,13 +233,13 @@ constraint (Kornai) as the shape of the repeal. It is one mechanism, and the
 honest boundaries around it are these:
 
 **It proves a consequence, not a premise.** The two guards are assumptions,
-written in plain sight at the top of two files, and `pol` never examines them.
+written in plain sight at the top of two files, and `writ` never examines them.
 What it establishes is what follows *from* them, exhaustively, over every one of
 the 56 reachable situations — including the ones nobody thought to check. That
 is the division of labour the tool is for, and it cuts both ways: disagree with
 a guard, and the finding is yours to redirect, not to dismiss.
 
-**"Fails" means permitted, not inevitable.** Pol is a possibility engine, not a
+**"Fails" means permitted, not inevitable.** Writ is a possibility engine, not a
 game solver. There are no incentives in it and no probabilities: a move that can
 fire, can fire. So `fails no-waste` says the rules of the planned economy
 *allow* the steel to be spent on the statue — not that they force it. The
@@ -255,7 +255,7 @@ untied to a situation, an allocator with no other channel, and a commitment that
 cannot be undone — and that shape does not need more plants to be visible. More
 plants make it larger, not truer.
 
-**It says nothing in favour of markets beyond the one conjunct.** `market.pol`
+**It says nothing in favour of markets beyond the one conjunct.** `market.writ`
 holds these three properties and no others were asked. Everything a priced
 system is usually accused of — that the budget is what a plant *has* rather than
 what it *needs*, that a clinic can be outbid by a better-funded statue — is
@@ -263,7 +263,7 @@ outside this model, because `need` here is not weighted by wealth. Change that,
 and the priced model has findings of its own. Ask it; the claims file is
 reusable and that is the point of it living apart.
 
-**How to argue with it, concretely.** Write a move in `planned.pol` whose guard
+**How to argue with it, concretely.** Write a move in `planned.writ` whose guard
 reads a `need` and which costs the asker something. Nothing in the language
 stops you, the file is thirty lines, and if the properties then hold, the
 finding is overturned — that is what a model you can run is *for*. The

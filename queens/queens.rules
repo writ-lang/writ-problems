@@ -1,7 +1,7 @@
 ; The eight queens claim, re-asked as a derivation (extension §2).
 ;
 ; This file exists to be CHECKED AGAINST queens.claims, not to replace it:
-; `pol check` answers `solvable` with the checker's own reading, and
+; `writ check` answers `solvable` with the checker's own reading, and
 ; `modality-cross-check.sh` re-asks the same question of the rules engine. Two
 ; implementations of one question; a disagreement is a bug in one of them.
 ;
@@ -10,10 +10,10 @@
 ; the property holds. (The counterexample-set encoding river.rules explains is
 ; for `live`, and nothing here is one.)
 
-(load "stdlib.pol")
+(load "stdlib.writ")
 
 ; Reachability over real edges, reflexive at every situation — the same graph
-; the checker walks. Cheap here for a reason worth noting: queens.pol is the
+; the checker walks. Cheap here for a reason worth noting: queens.writ is the
 ; COLUMN-ORDERED model, so its graph is a tree of 2057 situations with 2056
 ; edges and no cycles. The unordered variant beside it has 118969 situations,
 ; and this transitive closure over that would be its own performance essay.
@@ -29,7 +29,7 @@
 (satisfies solvable (all (q queen) (defined q.at)))
 
 ; The per-queen view the conjunction above cannot give: where each queen stands
-; in a given situation. `pol derive queens.pol queens.rules "(placed 2056 Q R)"`
+; in a given situation. `writ derive queens.writ queens.rules "(placed 2056 Q R)"`
 ; reads a finished board off the space.
 ;
 ; The typed declaration is not decoration. `R` occurs only here and in a

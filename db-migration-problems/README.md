@@ -1,10 +1,10 @@
 # Database migration problems
 
 Three worked examples. Each one is a schema change that looks routine, has a
-plan that reads correctly, and goes wrong anyway — and each one ends with `pol`
+plan that reads correctly, and goes wrong anyway — and each one ends with `writ`
 refusing the wrong version and naming the step responsible.
 
-You do not need to know anything about `pol` to read any of them. Each has its
+You do not need to know anything about `writ` to read any of them. Each has its
 own page, written from the beginning.
 
 ---
@@ -34,7 +34,7 @@ Each directory holds the same five things:
   what makes the comparison mean something: any difference in the answers comes
   from the change and from nothing else.
 - **A second copy of the questions**, written a different way, so that two
-  independent parts of `pol` answer them and can be checked against each other.
+  independent parts of `writ` answer them and can be checked against each other.
 
 And each one ends the same way. The safe plan exits 0. The shortcut exits 1,
 says which rule broke, how many situations are affected, and prints the
@@ -61,15 +61,15 @@ is the argument for writing the sequence down at all.
 ## Where the DDL helps, and where it stops
 
 `rename-a-column/` has one mistake that *is* visible in a single file: adding
-the new column as `NOT NULL` during the expand step. `pol sql` reads the DDL
+the new column as `NOT NULL` during the expand step. `writ sql` reads the DDL
 into a model, and the good and bad versions differ by a single character —
 `text?` against `text`. Because the file also carries a row that predates the
 column, the bad version is not merely different but refused:
 
 ```console
-$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
-$ pol check wrong.pol
-pol: wrong.pol: value out of domain for cell users.full-name for u1
+$ writ sql 02-expand-wrong.sql --with-data > wrong.writ
+$ writ check wrong.writ
+writ: wrong.writ: value out of domain for cell users.full-name for u1
 ```
 
 That is worth knowing on its own: some migration mistakes can be caught from
@@ -82,13 +82,13 @@ folder lives in exactly those two gaps.
 
 ## Running them
 
-With `pol` installed (see the
-[install instructions](https://github.com/sajonaro/pol#install)), from any of
+With `writ` installed (see the
+[install instructions](https://github.com/writ-lang/writ#install)), from any of
 the three directories:
 
 ```console
-$ pol check drop-a-column.pol --claims drop-a-column.claims           # exit 0
-$ pol check drop-a-column-shortcut.pol --claims drop-a-column.claims  # exit 1
+$ writ check drop-a-column.writ --claims drop-a-column.claims           # exit 0
+$ writ check drop-a-column-shortcut.writ --claims drop-a-column.claims  # exit 1
 ```
 
 Or run all of them, with the rest of the repository's checks, from the top:
@@ -112,6 +112,6 @@ four things:
    general, not about your particular column, so they tend to carry over
    unchanged.
 
-If you add a step, `pol` will tell you it is unacknowledged and exit 1 until you
+If you add a step, `writ` will tell you it is unacknowledged and exit 1 until you
 say, in the questions file, that you have considered which rules it could
 affect. That is deliberate.

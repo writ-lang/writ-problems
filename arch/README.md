@@ -7,17 +7,17 @@ exists.*
 That is a brief, not a specification, and it is the kind of thing an architect
 is normally left to answer by judgement. This scenario answers it by
 **enumeration**: a bank of nineteen components, seven stages to fill, the
-brief's requirements as guards, and `pol check` walking every architecture the
+brief's requirements as guards, and `writ check` walking every architecture the
 constraints permit.
 
 It is [`queens/`](../queens/) one level up. A queen is placed on a square; a
 stage is filled by a component. A cursor walks the stages in build order, so the
 moves index stages rather than permutations, and a finished architecture is a
 dead end because a filled ladder has no move left. The board lives next door in
-[`../libraries/arch.lib.pol`](../libraries/arch.lib.pol) — vocabulary, not
+[`../libraries/arch.lib.writ`](../libraries/arch.lib.writ) — vocabulary, not
 behaviour — and this file is only the parts, the brief, and what may happen.
 
-## What `pol check` answers
+## What `writ check` answers
 
 ```
 states: 184   edges: 185
@@ -47,7 +47,7 @@ never then be met, and `live` is what finds it.
 
 **C. One gap.** The brief never says whether the PDFs are digital-native or
 scanned, and that single unstated fact decides whether a whole class of extract
-component is admissible at all. `pol` does not guess it, does not average over
+component is admissible at all. `writ` does not guess it, does not average over
 it, and does not quietly pick one: it reports the hole and where it is reached.
 **This is the question to put back to whoever wrote the brief**, produced
 mechanically rather than by intuition.
@@ -73,7 +73,7 @@ confirms the guard is doing what it claims.
 A finished architecture is data, not prose:
 
 ```console
-$ pol derive arch.pol arch.rules "(blueprint 183 K C)"
+$ writ derive arch.writ arch.rules "(blueprint 183 K C)"
 blueprint  (7 rows)
   183  hold       object-store        183  catalog    doc-store
   183  enumerate  db-index            183  serve-ai   dataset-export
@@ -97,7 +97,7 @@ Because ordered decisions make the space the set of *prefixes* of a finished
 configuration, not the product of every cell. Seven stages admitting 1, 2, 2, 2,
 3, 2, 2 components give `1·2·2·2·3·2·2 = 96` designs and
 `1+1+2+4+8+24+48+96 = 184` situations — the cost law in
-[pol's README](https://github.com/sajonaro/pol#what-an-answer-costs), exactly.
+[writ's README](https://github.com/writ-lang/writ#what-an-answer-costs), exactly.
 
 Which means **tightening the brief makes this cheaper, not dearer**. Forbid one
 more coupling and it is 144 designs in 232 situations; demand one more property
@@ -108,7 +108,7 @@ for nothing; only the *answer set* costs.
 
 The component attributes — which parts survive 50TB, which are reproducible,
 which persist their output — were **written by hand, and they are the model's
-weakest link**. `pol` proves what follows from them exhaustively and will do so
+weakest link**. `writ` proves what follows from them exhaustively and will do so
 just as faithfully if they are wrong. The mechanism is the contribution here;
 the catalogue is a sketch, and a real one is a curation problem, not a language
 problem.

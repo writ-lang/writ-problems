@@ -24,7 +24,7 @@ Here is the same doctrine stated so that it has content:
 > **Once the means of production are held in common, no surplus goes to a party
 > outside the work, by the decision of a party outside the work.**
 
-That forbids a definite arrangement. In Pol a prohibition is `never`, so the
+That forbids a definite arrangement. In Writ a prohibition is `never`, so the
 claim goes into [`gotha.claims`](gotha.claims) verbatim:
 
 ```lisp
@@ -35,7 +35,7 @@ claim goes into [`gotha.claims`](gotha.claims) verbatim:
               (is loom-house.directed-by.produces no))))
 ```
 
-`pol` searches every reachable situation for one that satisfies the forbidden
+`writ` searches every reachable situation for one that satisfies the forbidden
 guard. If it finds one it prints the route to it, and the route is the
 falsifier.
 
@@ -80,10 +80,10 @@ once** — title to the commons, direction to the weavers, the proprietor's clai
 extinguished, with no move back. No restoration, no sabotage, no invasion. If
 the claim fails here it does not fail for want of a revolution.
 
-## What `pol` answers
+## What `writ` answers
 
 ```console
-$ pol check gotha.pol --claims gotha.claims
+$ writ check gotha.writ --claims gotha.claims
 states: 7   edges: 13
 gaps: none
 dead ends: none
@@ -107,7 +107,7 @@ $ echo $?
 
 **`holds expropriation-succeeds`** comes first for a reason. The antecedent is
 reached: the mill really does become common and the surplus really does reach
-the hands that worked it, in two moves, and `pol` prints them. A model in which
+the hands that worked it, in two moves, and `writ` prints them. A model in which
 the revolution failed would refute nothing at all.
 
 **`fails no-exploitation`** is the refutation, and the witness is the falsifier,
@@ -165,11 +165,11 @@ claim does not imply it, and never did.
 
 `no-exploitation` is a `never`, so its potential-falsifier set is a thing the
 tool can print rather than argue about
-([`gotha.rules`](gotha.rules), checked against `pol check` by
+([`gotha.rules`](gotha.rules), checked against `writ check` by
 [`cross-check.sh`](cross-check.sh) beside it):
 
 ```console
-$ pol derive gotha.pol gotha.rules no-exploitation
+$ writ derive gotha.writ gotha.rules no-exploitation
 no-exploitation  (1 row)
   5
 ```

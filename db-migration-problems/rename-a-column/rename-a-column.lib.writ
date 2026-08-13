@@ -1,0 +1,24 @@
+(load "stdlib.writ")
+; rename-a-column.lib.writ — the vocabulary shared by the models and their questions.
+;
+; It is a file of its own because a .claims file has its own form scope and
+; there is no implicit prelude: a form used in both a model and its questions
+; must be declared somewhere both of them load.
+
+; Does RELEASE write COLUMN? The read/write sets are a RELATION, so they are a
+; junction type, and asking about one is an existential over it.
+;
+; W is a slot, not a name chosen here, and that is forced: a form template's
+; list heads must be reserved words, slots, or earlier forms, and a `some`
+; binder is none of those. Passing the binder in is exactly how the standard
+; library's `all` gets a `some` into a template.
+(form (writes-col W REL COL) (some (W writes) (and (is W.by REL) (is W.col COL))))
+(form (reads-col  R REL COL) (some (R reads)  (and (is R.by REL) (is R.col COL))))
+
+; The fleet is settled when one release is running, mid-roll when two are.
+(form settled (is prod.old prod.new))
+(form rolling (differ prod.old prod.new))
+
+; Where the migration is trying to get to: the old column gone, and the fleet
+; settled on the release that neither reads nor writes it.
+(form contracted (and (is name-col.state absent) settled (is prod.new r4)))

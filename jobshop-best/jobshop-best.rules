@@ -7,7 +7,7 @@
 ; counterexample-set encoding, and the trap of getting it backwards, is
 ; explained in ../river/river.rules; nothing here is a `live`.)
 
-(load "../libraries/scheduling.lib.pol")
+(load "../libraries/scheduling.lib.writ")
 
 (load "ct.rules")
 

@@ -3,7 +3,7 @@
 This directory holds a worked example. It checks whether a plan for renaming a
 database column is safe, and it refuses a plan that is not.
 
-You do not need to know anything about `pol` to read this page. The words it
+You do not need to know anything about `writ` to read this page. The words it
 uses are explained as they appear, and there is a glossary at the end.
 
 ---
@@ -97,11 +97,11 @@ Each is ordinary DDL. Each also ends with one `INSERT` of a representative
 user, so that every file can be checked on its own rather than only meaning
 something next to the others.
 
-`pol sql` reads a `.sql` file and writes a model:
+`writ sql` reads a `.sql` file and writes a model:
 
 ```console
-$ pol sql 02-expand.sql --with-data > expand.pol
-$ pol check expand.pol
+$ writ sql 02-expand.sql --with-data > expand.writ
+$ writ check expand.writ
 states: 1   edges: 0
 ```
 
@@ -139,9 +139,9 @@ makes it provable — because it is the user who already existed, and at the
 instant the column appears, that user has no value for it:
 
 ```console
-$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
-$ pol check wrong.pol
-pol: wrong.pol: value out of domain for cell users.full-name for u1
+$ writ sql 02-expand-wrong.sql --with-data > wrong.writ
+$ writ check wrong.writ
+writ: wrong.writ: value out of domain for cell users.full-name for u1
 $ echo $?
 2
 ```
@@ -260,8 +260,8 @@ tells you which step causes a problem rather than just that one exists.
 
 Two files describe two plans:
 
-- `rename-a-column.pol` — a plan that is safe.
-- `rename-a-column-shortcut.pol` — the same plan with **one line
+- `rename-a-column.writ` — a plan that is safe.
+- `rename-a-column-shortcut.writ` — the same plan with **one line
   changed**. It looks fine. It is not.
 
 Both are asked exactly the same questions, from the same file. That is
@@ -272,30 +272,30 @@ difference is the one changed line.
 
 ## 6. Running it
 
-You need `pol` installed. If you do not have it, see the
-[install instructions](https://github.com/sajonaro/pol#install); the short
-version is `opam pin add pol git+https://github.com/sajonaro/pol.git`.
+You need `writ` installed. If you do not have it, see the
+[install instructions](https://github.com/writ-lang/writ#install); the short
+version is `opam pin add writ git+https://github.com/writ-lang/writ.git`.
 
 From this directory, the DDL first:
 
 ```console
-$ pol sql 02-expand.sql --with-data > expand.pol
-$ pol check expand.pol
+$ writ sql 02-expand.sql --with-data > expand.writ
+$ writ check expand.writ
 
-$ pol sql 02-expand-wrong.sql --with-data > wrong.pol
-$ pol check wrong.pol            # refused: exit 2
+$ writ sql 02-expand-wrong.sql --with-data > wrong.writ
+$ writ check wrong.writ            # refused: exit 2
 ```
 
 Then the sequence:
 
 ```console
-$ pol check rename-a-column.pol --claims rename-a-column.claims
+$ writ check rename-a-column.writ --claims rename-a-column.claims
 ```
 
 That checks the safe plan. To check the unsafe one:
 
 ```console
-$ pol check rename-a-column-shortcut.pol --claims rename-a-column.claims
+$ writ check rename-a-column-shortcut.writ --claims rename-a-column.claims
 ```
 
 Note that the second command uses the *same* questions file as the first.
@@ -378,7 +378,7 @@ looked at each one. If you leave any out, the exit code becomes 1.
 get all the way to the end?* The answer is yes.
 
 **The list underneath it is the answer, and it is the most useful thing here.**
-Nobody wrote that sequence of nine steps. `pol` searched for a way to reach the
+Nobody wrote that sequence of nine steps. `writ` searched for a way to reach the
 finished state and printed the route it found. That route is your runbook.
 
 Read it and you can see the pattern doing its work:
@@ -422,7 +422,7 @@ one. A plan can have a working path and still have a trap next to it.
 
 ## 8. The unsafe plan
 
-`rename-a-column-shortcut.pol` is the same file with one condition
+`rename-a-column-shortcut.writ` is the same file with one condition
 deleted. In the safe plan, the step that deploys the reader has this condition:
 
 ```lisp
@@ -444,7 +444,7 @@ feels like a tidy-up job that can happen later, and skipping it makes the
 migration shorter. It is a reasonable-looking decision, which is what makes it
 worth catching automatically.
 
-### What `pol` says
+### What `writ` says
 
 ```
 states: 15   edges: 17
@@ -500,11 +500,11 @@ dangerous plan is not the one that looks dangerous.
 
 ## 9. One tool that does not catch it
 
-`pol` has a command for comparing two versions of a model, which sounds like
+`writ` has a command for comparing two versions of a model, which sounds like
 exactly what you would want here:
 
 ```console
-$ pol compare rename-a-column.pol rename-a-column-shortcut.pol
+$ writ compare rename-a-column.writ rename-a-column-shortcut.writ
 equations:   read-of-existing           preserved
              write-of-existing          preserved
              read-of-filled             preserved
@@ -530,11 +530,11 @@ will go green on a plan that breaks production. Use `check`.
 
 ## 10. Using it as a gate
 
-`pol check` exits 0 when it finds nothing and 1 when it does. That is all a CI
+`writ check` exits 0 when it finds nothing and 1 when it does. That is all a CI
 step needs:
 
 ```sh
-pol check rename-a-column.pol --claims rename-a-column.claims
+writ check rename-a-column.writ --claims rename-a-column.claims
 ```
 
 If the exit code is 1, the build fails, and the output already names the rule,
@@ -592,7 +592,7 @@ is not enough.
 are generic — they are about columns and releases, not about `full_name` — so
 you probably do not need to change them at all.
 
-If you add a step, `pol` will tell you it is unacknowledged and exit 1 until
+If you add a step, `writ` will tell you it is unacknowledged and exit 1 until
 you add a line to the questions file saying you have considered it. That is
 intentional.
 
@@ -604,14 +604,14 @@ You can skip this section. It is here for readers who want to understand the
 model itself rather than use it.
 
 **Everything is a state machine.** You describe the kinds of things that exist,
-one starting situation, and the moves. `pol` works out every situation
+one starting situation, and the moves. `writ` works out every situation
 reachable from the start and answers questions about all of them.
 
 **The moves are what an operator can do**, and their conditions are the
 runbook. The rules are written separately as `equation` blocks, and this
 separation is what makes the output useful. If the rules were conditions on the
 moves, an unsafe move would simply be impossible and you would learn nothing.
-Because they are separate, `pol` can tell you that a move is *allowed by the
+Because they are separate, `writ` can tell you that a move is *allowed by the
 plan* but *breaks a rule*, which is the actual finding.
 
 **A release reads and writes several columns**, so "what r2 writes" is a list,
@@ -641,14 +641,14 @@ releases ...".
 | `02-expand.sql` | the expand step: the new column, nullable |
 | `02-expand-wrong.sql` | the same with `NOT NULL` — refused, and it says why |
 | `03-contract.sql` | the contract step: the old column dropped |
-| `rename-a-column.pol` | the safe plan: columns, releases, steps, four rules |
-| `rename-a-column-shortcut.pol` | the same, with one condition removed |
+| `rename-a-column.writ` | the safe plan: columns, releases, steps, four rules |
+| `rename-a-column-shortcut.writ` | the same, with one condition removed |
 | `rename-a-column.claims` | the questions, and the acknowledgements |
-| `rename-a-column.lib.pol` | shared definitions, loaded by both of the above |
+| `rename-a-column.lib.writ` | shared definitions, loaded by both of the above |
 | `rename-a-column.rules` | the same two questions written a second way |
 
 The last file exists as a cross-check. The two questions are answered twice, by
-two different parts of `pol` that share no code. If the two answers ever
+two different parts of `writ` that share no code. If the two answers ever
 disagree, one of them has a bug — and that is a much better test than a number
 someone chose by hand.
 
@@ -668,7 +668,7 @@ existing row.
 them means one set of questions can be asked of several models, which is
 exactly what happens here.
 
-**equation** — a rule that must always hold. `pol` reports both which steps
+**equation** — a rule that must always hold. `writ` reports both which steps
 could break it and whether any reachable situation actually does.
 
 **expand/contract** — the pattern in section 2. Add the new thing, run both
@@ -685,6 +685,6 @@ once, so that two versions serve traffic at the same time.
 **transition** — one move: something an operator does, with a condition saying
 when it is allowed.
 
-**witness** — the concrete route `pol` prints to back up an answer. For a
+**witness** — the concrete route `writ` prints to back up an answer. For a
 question that holds, it is an example that works. For a broken rule, it is the
 shortest way to break it.

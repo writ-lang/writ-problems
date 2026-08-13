@@ -14,7 +14,7 @@
   "the docket can always still conclude"
   (live (is docket.stage concluded)))
 
-; Which of our own powers can violate our own declared law? `pol check` reports
+; Which of our own powers can violate our own declared law? `writ check` reports
 ; that same-agency can be broken by capture-watchdog and restore-watchdog (both
 ; write watchdog.independence, an arrow the same-agency routes traverse). We
 ; acknowledge exactly those two — recording ownership (§16.3). We do NOT accept

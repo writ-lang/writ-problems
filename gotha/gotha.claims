@@ -3,7 +3,7 @@
 ; A claim is testable, in Popper's sense, when it FORBIDS something: the class
 ; of its potential falsifiers must be non-empty. That is exactly what `never`
 ; is. `(never F)` is a prohibition, F describes the potential falsifiers, and
-; `pol` searches every reachable situation for one — so a refutation here is not
+; `writ` searches every reachable situation for one — so a refutation here is not
 ; an opinion about the claim but a route to a situation the claim says cannot
 ; occur, printed move by move.
 ;
@@ -58,7 +58,7 @@
 
 ; 1. THE ANTECEDENT IS REACHED, IN FULL. Before a refutation can mean anything,
 ; the thing being tested has to happen: the mill really does become common, and
-; the surplus really does reach the producers. `pol` prints the two moves. A
+; the surplus really does reach the producers. `writ` prints the two moves. A
 ; model in which the revolution failed would refute nothing.
 (property expropriation-succeeds
   "the mill can be brought into common ownership with the surplus in the hands that worked it"

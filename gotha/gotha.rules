@@ -1,6 +1,6 @@
 ; The three questions of gotha.claims, re-asked as derivations (extension §2).
-; `cross-check.sh` beside this file runs both and compares them: if `pol derive`
-; and `pol check` ever disagree, one of them is wrong and the disagreement is
+; `cross-check.sh` beside this file runs both and compares them: if `writ derive`
+; and `writ check` ever disagree, one of them is wrong and the disagreement is
 ; the finding — not a number to adjust.
 ;
 ; POLARITY — read this before "fixing" anything below.
@@ -11,7 +11,7 @@
 ; `no-exploitation` is the refutation, so its set is the interesting one to read
 ; directly — it is the model's potential falsifiers, enumerated:
 ;
-;     pol derive gotha.pol gotha.rules no-exploitation
+;     writ derive gotha.writ gotha.rules no-exploitation
 
 (load "ct.rules")
 

@@ -4,7 +4,7 @@ This directory holds a worked example. It checks the oldest protocol for making
 two machines change their minds together — and finds, by exhaustion, both the
 guarantee it gives and the one it does not.
 
-You do not need to know anything about `pol`, or about distributed systems, to
+You do not need to know anything about `writ`, or about distributed systems, to
 read this page. Every term is explained where it appears, and there is a
 glossary at the end.
 
@@ -133,7 +133,7 @@ about to see, exactly what makes the protocol able to hang.
 You can skim this section. It is here so the rest is readable, not because you
 need it to follow the results.
 
-A `pol` model is three things: the kinds of thing that exist, one starting
+A `writ` model is three things: the kinds of thing that exist, one starting
 arrangement, and the moves.
 
 ### A message is a slot
@@ -152,7 +152,7 @@ means the slot is allowed to be **empty**:
 ```
 
 An empty slot is not a special value meaning "nothing". It is the *absence* of
-an answer, and `pol` can be asked about it directly.
+an answer, and `writ` can be asked about it directly.
 
 ```
    c.decision = commit        the decision HAS been taken
@@ -178,7 +178,7 @@ Voting yes and preparing are one move, because in the protocol they are one act:
 
 ### A crash is just another move
 
-Nothing in `pol` distinguishes a failure from an intention. Both are things that
+Nothing in `writ` distinguishes a failure from an intention. Both are things that
 can happen.
 
 ```lisp
@@ -197,7 +197,7 @@ after telling one participant and not the other. Nobody had to list those cases:
    ──✗──> ask p1 ──✗──> ask p2 ──✗──> decide ──✗──> tell p1 ──✗──> tell p2 ──✗──>
 ```
 
-From that page of rules, `pol` builds **84 situations** and all 152 moves
+From that page of rules, `writ` builds **84 situations** and all 152 moves
 between them, then answers every question by looking at all of them.
 
 ---
@@ -205,7 +205,7 @@ between them, then answers every question by looking at all of them.
 ## 5. What holds: the parties never disagree
 
 ```console
-$ pol check two-phase-commit.pol --claims two-phase-commit.claims
+$ writ check two-phase-commit.writ --claims two-phase-commit.claims
 states: 84   edges: 152
 holds  atomic
 holds  can-commit
@@ -343,13 +343,13 @@ Where they come apart is the second file.
 
 ### The lossy model: alive throughout, and still not guaranteed to finish
 
-`two-phase-commit-lossy.pol` has **no crash at all**. The coordinator is alive
+`two-phase-commit-lossy.writ` has **no crash at all**. The coordinator is alive
 the whole way through. The only new move is the network losing a message — after
 which the coordinator simply sends it again, which is what every real
 implementation does.
 
 ```console
-$ pol check two-phase-commit-lossy.pol --claims two-phase-commit.claims
+$ writ check two-phase-commit-lossy.writ --claims two-phase-commit.claims
 states: 42   edges: 82
 holds  atomic
 holds  can-commit
@@ -474,12 +474,12 @@ nobody else can touch.
 
 The obvious remedy is to let a stranded participant give up: if the coordinator
 is visibly gone and nothing has arrived, abort. That is
-`two-phase-commit-timeout.pol`.
+`two-phase-commit-timeout.writ`.
 
-`pol compare` says exactly what it costs:
+`writ compare` says exactly what it costs:
 
 ```console
-$ pol compare two-phase-commit.pol two-phase-commit-timeout.pol
+$ writ compare two-phase-commit.writ two-phase-commit-timeout.writ
 properties:  atomic                  LOST      witness: 1. p1-yes 2. p2-yes
                                      3. c-commit 4. deliver-p1 5. p1-commit
                                      6. c-crash 7. p2-timeout
@@ -522,12 +522,12 @@ Two locally correct decisions, one global disaster.
 
 **This is not a bug in the cure.** It is the trade, and it is a real one — that
 no protocol of this shape can have both is a theorem about the world, not a
-property of this model. What `pol compare` adds is that the trade is **stated
+property of this model. What `writ compare` adds is that the trade is **stated
 rather than argued**: two files, one table, and the exact run that costs you the
 guarantee.
 
 ```
-   two-phase-commit.pol            two-phase-commit-timeout.pol
+   two-phase-commit.writ            two-phase-commit-timeout.writ
    ─────────────────────           ────────────────────────────
    ✔ atomic                        ✘ atomic
    ✘ can-decide                    ✔ can-decide
@@ -542,9 +542,9 @@ guarantee.
 
 | file | what it is |
 | --- | --- |
-| `two-phase-commit.pol` | the protocol, with a coordinator that can crash |
-| `two-phase-commit-lossy.pol` | no crash; the network drops messages and they are resent |
-| `two-phase-commit-timeout.pol` | the crashing model plus a participant that gives up |
+| `two-phase-commit.writ` | the protocol, with a coordinator that can crash |
+| `two-phase-commit-lossy.writ` | no crash; the network drops messages and they are resent |
+| `two-phase-commit-timeout.writ` | the crashing model plus a participant that gives up |
 | `two-phase-commit.claims` | the questions, asked of all three |
 | `two-phase-commit.rules` | the same questions as derivations, for the cross-check |
 
@@ -561,7 +561,7 @@ it would answer a different question and then report the disagreement as a bug.
 
 ## 11. What this scenario is not
 
-`pol` has no numbers, no unbounded collections and no clocks, and this model
+`writ` has no numbers, no unbounded collections and no clocks, and this model
 shows the shape of what that rules out.
 
 There are **two** participants because they are named, not because two is
@@ -593,7 +593,7 @@ told to, so it may no longer decide for itself, and it holds its locks.
 **run** — one complete history: it goes on for ever, or it stops where the model
 stops.
 
-**situation** — one complete arrangement of everything the model can vary. `pol`
+**situation** — one complete arrangement of everything the model can vary. `writ`
 builds all of them; the output calls the count `states`.
 
 **move** — a condition and a change. A move whose condition is false in a
@@ -603,7 +603,7 @@ situation simply does not exist there.
 
 **`never F`** — no situation satisfies F. A census over all of them.
 
-**`possible F`** — some situation does, and `pol` prints the route.
+**`possible F`** — some situation does, and `writ` prints the route.
 
 **`live F`** — from every situation, an F-situation is *still reachable*.
 
@@ -613,6 +613,6 @@ stronger than `live`.
 **`(fair MOVE…)`** — narrows which runs a question is about: a run where a named
 move is offered for ever and never taken does not count.
 
-**witness** — the numbered route `pol` prints with a verdict. For a failing
+**witness** — the numbered route `writ` prints with a verdict. For a failing
 property it is the shortest counterexample; for a holding `possible` it is the
 answer itself.

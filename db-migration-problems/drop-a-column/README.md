@@ -6,7 +6,7 @@ database column is safe, and it refuses a plan that is not.
 It is the smallest example in this folder, and the one with the shortest path
 to an outage: **two moves.** If you only read one of these, read this one.
 
-You do not need to know anything about `pol` to read this page. Every term is
+You do not need to know anything about `writ` to read this page. Every term is
 explained where it appears, and there is a glossary at the end.
 
 ---
@@ -102,12 +102,12 @@ Each file also ends with one `INSERT` of a representative user. That is so each
 file can be checked on its own, rather than only meaning something next to the
 other one.
 
-`pol` reads SQL directly. `pol sql` turns a `.sql` file into a model, and
-`pol check` builds it:
+`writ` reads SQL directly. `writ sql` turns a `.sql` file into a model, and
+`writ check` builds it:
 
 ```console
-$ pol sql 01-before.sql --with-data > before.pol
-$ pol check before.pol
+$ writ sql 01-before.sql --with-data > before.writ
+$ writ check before.writ
 states: 1   edges: 0
 ```
 
@@ -132,7 +132,7 @@ schema.
 **Neither file is wrong, and that is the whole point of this example.**
 
 There is a sibling problem in this folder, `rename-a-column/`, where one of the
-SQL files *is* wrong on its own and `pol` refuses it. That does not happen here.
+SQL files *is* wrong on its own and `writ` refuses it. That does not happen here.
 Both of these schemas are correct. Both would pass any review. Both would work
 perfectly if you ran them at the right time.
 
@@ -161,8 +161,8 @@ the problem instead of only that one exists.
 
 Two files describe two plans:
 
-- `drop-a-column.pol` — a plan that is safe.
-- `drop-a-column-shortcut.pol` — the same plan with **one word deleted**.
+- `drop-a-column.writ` — a plan that is safe.
+- `drop-a-column-shortcut.writ` — the same plan with **one word deleted**.
 
 Both are asked exactly the same questions, from the same file. That is
 deliberate. When the answers differ, the only thing that could have caused the
@@ -172,20 +172,20 @@ difference is that one word.
 
 ## 4. Running it
 
-You need `pol` installed. If you do not have it, see the
-[install instructions](https://github.com/sajonaro/pol#install); the short
-version is `opam pin add pol git+https://github.com/sajonaro/pol.git`.
+You need `writ` installed. If you do not have it, see the
+[install instructions](https://github.com/writ-lang/writ#install); the short
+version is `opam pin add writ git+https://github.com/writ-lang/writ.git`.
 
 From this directory:
 
 ```console
-$ pol check drop-a-column.pol --claims drop-a-column.claims
+$ writ check drop-a-column.writ --claims drop-a-column.claims
 ```
 
 That is the safe plan. And the unsafe one:
 
 ```console
-$ pol check drop-a-column-shortcut.pol --claims drop-a-column.claims
+$ writ check drop-a-column-shortcut.writ --claims drop-a-column.claims
 ```
 
 Note that the second command uses the **same** questions file as the first.
@@ -271,7 +271,7 @@ could affect this rule". The file does that for every pair.
 
 It is a signature, not a check. Nothing is verified by it. What it does is
 force whoever writes the plan to look at each combination once and confirm they
-have thought about it. If you leave any out, the exit code becomes 1 and `pol`
+have thought about it. If you leave any out, the exit code becomes 1 and `writ`
 tells you which.
 
 ### `holds  completes`
@@ -280,7 +280,7 @@ tells you which.
 possible to get all the way to the end?*
 
 Yes. And the three steps printed underneath are how — that list is the answer,
-not decoration. `pol` searched for a route to the finished state and printed
+not decoration. `writ` searched for a route to the finished state and printed
 the one it found.
 
 | # | step | what happens |
@@ -330,7 +330,7 @@ That is the whole plan. There is no clever part.
 
 ## 7. The shortcut
 
-`drop-a-column-shortcut.pol` is the same file with `settled` deleted:
+`drop-a-column-shortcut.writ` is the same file with `settled` deleted:
 
 ```lisp
 (when (and (is prod.new r2) (is flag-col.state present)))   ; `settled`, gone
@@ -343,7 +343,7 @@ Now the drop is allowed as soon as the new release has *started* going out.
 everywhere*, and the other means *on its way*. In a sentence those are the same
 sentence. In production they are minutes apart.
 
-### What `pol` says
+### What `writ` says
 
 ```
 states: 5   edges: 5
@@ -409,21 +409,21 @@ considering situations rather than steps.
 
 ## 8. Using it as a gate
 
-`pol check` exits 0 when it finds nothing and 1 when it finds something. That
+`writ check` exits 0 when it finds nothing and 1 when it finds something. That
 is all a CI step needs:
 
 ```sh
-pol check drop-a-column.pol --claims drop-a-column.claims
+writ check drop-a-column.writ --claims drop-a-column.claims
 ```
 
 If the exit code is 1, the build fails, and the output already names the rule,
 counts the affected situations, and prints the shortest route to one of them.
 
-One warning. `pol` has a command for comparing two models, and it is the wrong
+One warning. `writ` has a command for comparing two models, and it is the wrong
 tool here:
 
 ```console
-$ pol compare drop-a-column.pol drop-a-column-shortcut.pol
+$ writ compare drop-a-column.writ drop-a-column-shortcut.writ
 ```
 
 It reports everything preserved and exits 0. That is correct — it answers
@@ -467,7 +467,7 @@ is precisely the thing everyone forgets.
 columns and releases in general, not about your particular column, so they tend
 to carry over unchanged.
 
-If you add a step, `pol` will report it unacknowledged and exit 1 until you add
+If you add a step, `writ` will report it unacknowledged and exit 1 until you add
 a line to the questions file saying you have considered which rules it could
 affect. That is intentional.
 
@@ -479,14 +479,14 @@ You can skip this. It is here for readers who want to understand the model
 rather than use it.
 
 **Everything is a state machine.** You describe the kinds of things that exist,
-one starting situation, and the moves that are possible. `pol` works out every
+one starting situation, and the moves that are possible. `writ` works out every
 situation reachable from the start, and answers questions about all of them at
 once.
 
 **The moves are what an operator can do**, and their conditions are the plan.
 The rules are written separately. That separation is what makes the output
 useful: if the rules were conditions on the moves, an unsafe move would simply
-be impossible, and you would learn nothing. Because they are separate, `pol` can
+be impossible, and you would learn nothing. Because they are separate, `writ` can
 say that a move is *allowed by your plan* but *breaks a rule* — which is the
 finding you actually want.
 
@@ -512,14 +512,14 @@ release currently running that ..." rather than naming `r1` directly.
 | --- | --- |
 | `01-before.sql` | the table with the column, and one row |
 | `02-after.sql` | the table without it, and one row |
-| `drop-a-column.pol` | the safe plan |
-| `drop-a-column-shortcut.pol` | the same, one word lighter |
+| `drop-a-column.writ` | the safe plan |
+| `drop-a-column-shortcut.writ` | the same, one word lighter |
 | `drop-a-column.claims` | the questions, and the acknowledgements |
-| `drop-a-column.lib.pol` | definitions shared by the model and the questions |
+| `drop-a-column.lib.writ` | definitions shared by the model and the questions |
 | `drop-a-column.rules` | the same two questions written a second way |
 
 The last file is a cross-check. The two questions get answered twice, by two
-parts of `pol` that share no code. If the two answers ever disagree, one of them
+parts of `writ` that share no code. If the two answers ever disagree, one of them
 has a bug — which is a better test than a number somebody chose by hand.
 
 The shared definitions have their own file because the questions file cannot
@@ -557,7 +557,7 @@ adding a constraint before the code that can satisfy it, see
 them apart means one set of questions can be asked of several models, which is
 exactly what happens here.
 
-**equation** — a rule that must always hold. `pol` reports both which steps
+**equation** — a rule that must always hold. `writ` reports both which steps
 could break it and whether any reachable situation actually does.
 
 **fleet** — the running application, as the model sees it: which release is on
@@ -576,6 +576,6 @@ as `states` in the output.
 **transition** — one move: something an operator does, with a condition saying
 when it is allowed.
 
-**witness** — the concrete route `pol` prints to back up an answer. For a
+**witness** — the concrete route `writ` prints to back up an answer. For a
 question that holds, an example that works. For a broken rule, the shortest way
 to break it.
