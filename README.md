@@ -1,5 +1,7 @@
 # Solving problems with `writ`
 
+<img src="docs/images/writ-mark-200.png" alt="writ" width="120" align="left" hspace="16" vspace="4">
+
 *Worked models for [writ](https://github.com/writ-lang/writ). The language, the
 checker and the CLI live there; this repository is the problems and their
 answers.*
