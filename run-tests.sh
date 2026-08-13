@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) 2026 Alex Kunich
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # End-to-end tests: SOLVE the Prologue puzzles with `pol` and check the answers
 # — including the SOLUTION PATH `pol` prints (the witness under a holding
 # `possible`). Each `pol check` exits 1 because it HAS findings to report — that

@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) 2026 Alex Kunich
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # The modality cross-check — two implementations of one question.
 #
 # `pol check` answers a `.claims` property with the checker's CTL reading

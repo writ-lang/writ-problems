@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) 2026 Alex Kunich
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # gotha's three questions, asked twice.
 #
 # `pol check` reads the modalities in gotha.claims as CTL (runtime/checker.ml).

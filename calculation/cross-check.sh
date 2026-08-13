@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) 2026 Alex Kunich
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # calculation's three questions, asked twice — and asked of BOTH models.
 #
 # `pol check` reads the modalities in market.claims as CTL (runtime/checker.ml).
