@@ -59,7 +59,7 @@ Now nobody can move. `a` waits on `b`, `b` waits on `c`, `c` waits on `a`. No
 job will ever release a machine, because releasing requires first acquiring the
 next one. The shop is stopped **forever**, and no amount of waiting fixes it.
 
-![The deadlock: each job holds one machine and waits for the next, in a cycle](../../../docs/diagrams/jobshop-deadlock.svg)
+![The deadlock: each job holds one machine and waits for the next, in a cycle](https://github.com/writ-lang/writ/blob/main/docs/diagrams/jobshop-deadlock.svg)
 
 Solid is *holds*, dashed is *waited for*. Follow either kind of arrow all the
 way round and you return where you started — that cycle **is** the deadlock.
