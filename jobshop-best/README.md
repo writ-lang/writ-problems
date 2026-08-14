@@ -100,7 +100,7 @@ There is no guard stopping it at t9 and none is needed: **where the chain has
 no answer the move is absent** — not a no-op, which would be a self-loop and
 would stop the situation ever being reported as a dead end. The full argument,
 including the swap that fixes when the right-hand side is read, is
-[`docs/set-as-chain.md`](../../../docs/set-as-chain.md).
+[`docs/kernel-spec.md` §10.3](https://github.com/writ-lang/writ/blob/main/docs/kernel-spec.md).
 
 The space is unchanged: still 1314 situations, still an optimum of five.
 
