@@ -28,7 +28,7 @@ forms — never a model's own choice of what to run.
 not be redeclared (kernel §7), so every model loading `chess.lib.writ` gives up
 `board`, `square`, `queen`, `free`, `empty` and the entity names. That cost is
 exactly why these are **domain** libraries and not additions to
-[`core/stdlib/stdlib.writ`](../../../core/stdlib/stdlib.writ): the standard
+[`core/stdlib/stdlib.writ`](https://github.com/writ-lang/writ/blob/main/core/stdlib/stdlib.writ): the standard
 library may not spend the shared namespace on a worldly concept. It is also the
 difference in kind — `stdlib.writ` is shipped and installed; these are not.
 
@@ -69,7 +69,7 @@ writ: resolved "stdlib.writ" -> core/stdlib/stdlib.writ
 
 ## A third one, deliberately not here
 
-[`tests/models/politics.lib.writ`](../../models/politics.lib.writ) is a domain
+[`tests/models/politics.lib.writ`](https://github.com/writ-lang/writ/blob/main/tests/models/politics.lib.writ) is a domain
 library too, and it stays with the unit-test corpus it serves. Moving it would
 couple the unit tests to the examples tree for no gain — a library belongs
 wherever all of its models can see it, and for that one, that is `tests/models/`.
