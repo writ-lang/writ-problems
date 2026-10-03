@@ -1,0 +1,113 @@
+; The same lifecycle, with ONE THING MISSING from the mover and leaver steps:
+; they remove Ada from her groups, and nothing else.
+;
+; That is what group-based offboarding does, and it is what the runbook says:
+; "access is managed through groups". It is true of every grant made through a
+; group. The administrator permission set was assigned directly, on the day
+; the request needed it, and nothing that acts on groups can see it.
+;
+; `writ check` exits 1 on this file.
+
+(load "stdlib.writ")
+(load "joiner-mover-leaver.lib.writ")
+
+(schema joiner-mover-leaver
+
+  (type status (active left))
+  (type team   (platform marketing))
+
+  (type person
+    (arrow status (to status))
+    (arrow team   (to team)))
+
+  ; How a grant was made, which decides what removes it. A `group` grant goes
+  ; when the person leaves the group; a `direct` one goes only when someone
+  ; removes it by name.
+  (type via-t (group direct))
+
+  ; A production entitlement, and who holds it.
+  (type entitlement
+    (arrow via (to via-t) fixed)
+    (maybe holder person))
+
+  (type stage (none requested approved provisioned))
+
+  ; The one access request this model follows.
+  (type request
+    (arrow requester (to person) fixed)
+    (arrow stage     (to stage))
+    (maybe approver person))
+
+  ; ---- the rules of the request ----
+
+  ; Nothing is provisioned that nobody approved.
+  (equation provisioned-means-approved
+    (not (and (is request.stage provisioned) (not (defined request.approver)))))
+
+  ; Nobody approves their own request.
+  (equation no-self-approval
+    (not (is request.approver request.requester))))
+
+(instance start joiner-mover-leaver
+
+  (person ada (status active) (team platform))   ; joins, needs production
+  (person bob (status active) (team platform))   ; her manager
+
+  ; The production group in the identity provider. Its membership syncs to
+  ; AWS IAM Identity Center and grants the engineers' permission set.
+  (entitlement prod-engineers (via group)  (holder vacant))
+  ; The administrator permission set on the production account, assigned to
+  ; the person directly: at the time, no group mapped to it, and the request
+  ; needed it that day.
+  (entitlement prod-admin     (via direct) (holder vacant))
+
+  (request ada-prod (requester ada) (stage none) (approver vacant)))
+
+(use joiner-mover-leaver)
+(initial start)
+
+; ---- joiner ----
+
+(transition ada-requests-prod
+  (when (and (is ada-prod.stage none) (is ada.status active)))
+  (do (set ada-prod.stage requested)))
+
+; Whoever approves must not be the requester. Each possible approver is a move
+; of its own, so the guard can say so.
+(form (approve-by N P)
+  (transition N
+    (when (and (is ada-prod.stage requested)
+               (is P.status active)
+               (not (is ada-prod.requester P))))
+    (do (set ada-prod.stage approved) (set ada-prod.approver P))))
+(approve-by ada-approves ada)   ; never fires: she is the requester
+(approve-by bob-approves bob)
+
+; Provisioning re-checks the person, not only the request. An approval is a
+; judgement about someone in a role; if they have since moved or left, the
+; approval is about a situation that no longer exists. (The first draft of
+; this file did not re-check, and writ found it: approve, leave, provision —
+; access granted to someone who had already gone. See the README.)
+(transition provision-ada
+  (when (and (is ada-prod.stage approved)
+             (is ada.status active)
+             (is ada.team platform)))
+  (do (set ada-prod.stage provisioned)
+      (set prod-engineers.holder ada)
+      (set prod-admin.holder ada)))
+
+; ---- mover and leaver ----
+
+; Each lifecycle event runs its own deprovisioning, the way an HR-driven
+; (SCIM) integration does: the change of team or the leaving date arrives, and
+; access is removed in the same step. It removes the person from their groups,
+; which is what the integration knows how to do.
+(transition ada-moves-to-marketing
+  (when (and (is ada.status active) (is ada.team platform)))
+  (do (set ada.team marketing)
+      (vacate prod-engineers.holder)))          ; <- prod-admin, not removed
+
+(transition ada-leaves
+  (when (is ada.status active))
+  (do (set ada.status left)
+      (vacate prod-engineers.holder)))          ; <- prod-admin, not removed

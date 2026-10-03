@@ -34,7 +34,7 @@ set -u
 here=$(cd "$(dirname "$0")" && pwd)
 WRIT=${WRIT:-writ}
 
-scenarios="river island queens jobshop-possible jobshop-best oversight workflow access arch two-phase-commit db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column"
+scenarios="river island queens jobshop-possible jobshop-best arch two-phase-commit db-migration-problems/rename-a-column db-migration-problems/drop-a-column db-migration-problems/add-a-required-column entitlement-problems/separation-of-duties entitlement-problems/scp-escalation entitlement-problems/joiner-mover-leaver expense-approval agent-guardrails deployment payments config-space"
 
 considered=0
 compared=0

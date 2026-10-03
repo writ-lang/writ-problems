@@ -1,0 +1,29 @@
+; The same four questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "agent-guardrails.lib.writ")
+
+(satisfies useful (and (is s.mode auto) (is api-key.in-context yes)))
+
+(satisfies human-can-release (is api-key.out approved))
+
+(satisfies no-unapproved-exfiltration silently-out)
+
+(satisfies in-ask-mode (is s.mode ask))
+(can-reach can-get-to-ask in-ask-mode)
+(trapped human-can-interrupt can-get-to-ask)
+
+; ---- the explanation ----
+; Every situation where the secret has left with nobody asked, and the tool it
+; left by, with the mode the session was in.
+(relation exfil-path (Situation tool mode-t))
+(rule (exfil-path S T M)
+  (situation S)
+  (holds S (is api-key.out silent))
+  (holds S (is T.carried-secret yes))
+  (holds S (is s.mode M)))

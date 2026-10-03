@@ -1,0 +1,116 @@
+; An expense approval process.
+;
+; Ann files an expense. Her manager approves it; above the threshold, finance
+; approves it too, and only after the manager. It is then paid. Along the way
+; it can be rejected and resubmitted, cancelled before payment, and its bank
+; account changed, which throws away every approval so far.
+;
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "expense-approval.lib.writ")
+
+(schema expense-approval
+
+  ; The amount, as the rules see it. They only ever ask which side of the
+  ; approval threshold it falls on, so that is all the model carries.
+  (type band-t (small large))
+
+  (type stage-t (draft submitted rejected paid cancelled))
+  (type bank-t (old-account new-account))
+  (type person)
+
+  (type expense
+    (arrow requester (to person) fixed)
+    (arrow band      (to band-t) fixed)
+    (arrow stage     (to stage-t))
+    (arrow bank      (to bank-t))
+    ; Two signature slots: the manager's, then finance's.
+    (maybe manager-sign person)
+    (maybe finance-sign person))
+
+  ; ---- the rules ----
+
+  ; Nobody signs their own expense.
+  (equation no-self-approval
+    (not (or (is expense.manager-sign expense.requester)
+             (is expense.finance-sign expense.requester))))
+
+  ; Finance signs only after the manager has.
+  (equation finance-after-manager
+    (not (and (defined expense.finance-sign) (not (defined expense.manager-sign)))))
+
+  ; A large expense is paid only on two independent approvals.
+  (equation two-for-large
+    (not (and (is expense.stage paid)
+              (is expense.band large)
+              (not (two-independent expense))))))
+
+(instance start expense-approval
+
+  (person ann)   ; files the expense
+  (person bob)   ; her manager, and the finance team's deputy approver
+  (person cat)   ; finance
+
+  ; Above the threshold: two approvals needed.
+  (expense e1 (requester ann) (band large) (stage draft) (bank old-account)
+              (manager-sign vacant) (finance-sign vacant)))
+
+(use expense-approval)
+(initial start)
+
+; ---- the process ----
+
+(transition submit
+  (when (is e1.stage draft))
+  (do (set e1.stage submitted)))
+
+; One move per person and slot. Each refuses the requester, and finance waits
+; for the manager.
+(form (approve-as-manager N P)
+  (transition N
+    (when (and (is e1.stage submitted)
+               (not (defined e1.manager-sign))
+               (not (is e1.requester P))))
+    (do (set e1.manager-sign P))))
+(form (approve-for-finance N P)
+  (transition N
+    (when (and (is e1.stage submitted)
+               (defined e1.manager-sign)
+               (not (defined e1.finance-sign))
+               (not (is e1.requester P))))
+    (do (set e1.finance-sign P))))
+
+(approve-as-manager  ann-approves-as-manager ann)   ; refused: she filed it
+(approve-as-manager  bob-approves-as-manager bob)
+(approve-for-finance bob-approves-for-finance bob)  ; the deputy
+(approve-for-finance cat-approves-for-finance cat)
+
+; Rejected expenses lose their signatures and can be resubmitted.
+(transition reject
+  (when (is e1.stage submitted))
+  (do (set e1.stage rejected) (vacate e1.manager-sign) (vacate e1.finance-sign)))
+(transition resubmit
+  (when (is e1.stage rejected))
+  (do (set e1.stage submitted)))
+
+; Cancellation is possible at any point before payment.
+(transition cancel
+  (when (or (is e1.stage draft) (is e1.stage submitted) (is e1.stage rejected)))
+  (do (set e1.stage cancelled)))
+
+; Changing the bank account invalidates every approval: one move, three
+; effects, all at once. Approvers approved paying THAT account.
+(transition change-bank-account
+  (when (and (is e1.stage submitted) (is e1.bank old-account)))
+  (do (set e1.bank new-account) (vacate e1.manager-sign) (vacate e1.finance-sign)))
+
+; Pay: a small expense on the manager's signature; a large one on two
+; signatures by two different people.
+(transition pay
+  (when (and (is e1.stage submitted)
+             (defined e1.manager-sign)
+             (or (is e1.band small)
+                 (two-independent e1))))
+  (do (set e1.stage paid)))
+

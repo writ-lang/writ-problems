@@ -1,0 +1,22 @@
+; The questions, held fixed across the reorganisation. `writ compare` reads
+; them from here for both models.
+
+(load "scp-escalation.lib.writ")
+
+(property dev-can-deploy
+  "a developer can still ship to production"
+  (possible (writes-prod dev)))
+
+(property dev-never-edits-cloudtrail
+  "developers cannot modify CloudTrail"
+  (never (edits-cloudtrail dev))
+  (show cloudtrail-editors))
+
+(property sec-can-always-audit
+  "whatever has happened, the security team can still get to production's audit trail"
+  (live (reads-audit sec))
+  (show audit-readers))
+
+; ---- who ----
+(query cloudtrail-editors (where (p principal)) (edits-cloudtrail p))
+(query audit-readers      (where (p principal)) (reads-audit p))

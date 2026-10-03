@@ -1,0 +1,30 @@
+; The same three questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "scp-escalation.lib.writ")
+
+(satisfies dev-can-deploy (writes-prod dev))
+
+(satisfies dev-never-edits-cloudtrail (edits-cloudtrail dev))
+
+(satisfies sec-audits (reads-audit sec))
+(can-reach can-audit sec-audits)
+(trapped sec-can-always-audit can-audit)
+
+; ---- the explanation ----
+; Every effective CloudTrail edit, as a privilege path: the situation, the
+; principal, the role it assumed, the account that role lives in, and the OU
+; that account sits in at that moment, whose SCP did not stop it.
+(relation escalation (Situation principal role account ou))
+(rule (escalation S P R A O)
+  (situation S)
+  (holds S (is P.assumed R))
+  (is R.cloudtrail-edit yes)
+  (is R.in A)
+  (holds S (is A.ou O))
+  (is O.deny-cloudtrail-edit no))

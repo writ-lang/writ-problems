@@ -1,0 +1,6 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; The secret has left the machine and no human said yes.
+(form silently-out (is api-key.out silent))

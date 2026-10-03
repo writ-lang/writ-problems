@@ -1,0 +1,39 @@
+; The same four questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "joiner-mover-leaver.lib.writ")
+
+(satisfies ada-gets-access
+  (and (is prod-engineers.holder ada) (is prod-admin.holder ada)))
+
+(satisfies movers-lose-prod (some (e entitlement) (held-outside-platform e)))
+
+(satisfies leavers-lose-everything (some (e entitlement) (held-by-leaver e)))
+
+(satisfies cut-off
+  (or (is ada.status active)
+      (and (not (defined prod-engineers.holder))
+           (not (defined prod-admin.holder)))))
+(can-reach can-cut-off cut-off)
+(trapped leavers-can-be-cut-off can-cut-off)
+
+; ---- the explanation ----
+; Every entitlement still held by someone with no business holding it: the
+; situation, the entitlement, how it was granted, and who holds it. The `via`
+; column is the finding — every row says `direct`.
+(relation left-behind (Situation entitlement via-t person))
+(rule (left-behind S E V P)
+  (situation S)
+  (holds S (is E.holder P))
+  (holds S (is P.status left))
+  (is E.via V))
+(rule (left-behind S E V P)
+  (situation S)
+  (holds S (is E.holder P))
+  (holds S (is P.team marketing))
+  (is E.via V))

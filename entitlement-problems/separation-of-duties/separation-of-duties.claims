@@ -1,0 +1,47 @@
+; The questions, put to both plans.
+
+(load "separation-of-duties.lib.writ")
+
+(property staffable
+  "someone can be given the power to approve"
+  (possible (some (a account) (or (is a.g1.role.can-approve yes)
+                                  (is a.g2.role.can-approve yes)))))
+
+(property no-conflict
+  "nobody ever holds both halves of a payment"
+  (never (some (a account) (conflicted a)))
+  (show conflicted-accounts))
+
+(property revocable
+  "from every reachable situation, everyone can still be taken out of every group"
+  (live (all (a account) (and (not (defined a.g1)) (not (defined a.g2))))))
+
+; ---- ownership ----
+; Every grant can break separation; that is what the grant checks are for, and
+; on the shortcut it is what the law reports. A removal cannot add a capability,
+; but writ's reading is syntactic: it writes a slot the law reads, so it is
+; acknowledged too.
+(accept alice-joins-requesters separation)
+(accept alice-joins-approvers separation)
+(accept alice-joins-finance-leads separation)
+(accept alice-also-joins-requesters separation)
+(accept alice-also-joins-approvers separation)
+(accept alice-also-joins-finance-leads separation)
+(accept bob-joins-requesters separation)
+(accept bob-joins-approvers separation)
+(accept bob-joins-finance-leads separation)
+(accept bob-also-joins-requesters separation)
+(accept bob-also-joins-approvers separation)
+(accept bob-also-joins-finance-leads separation)
+(accept alice-leaves-first-group separation)
+(accept alice-leaves-second-group separation)
+(accept bob-leaves-first-group separation)
+(accept bob-leaves-second-group separation)
+
+; ---- who ----
+; Answered at the situation a failing verdict singles out. A query binder
+; cannot be compared with another, so this names the ACCOUNT; which two groups
+; it holds is a join, and that is `conflict` in separation-of-duties.rules.
+(query conflicted-accounts
+  (where (a account))
+  (conflicted a))

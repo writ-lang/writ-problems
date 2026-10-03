@@ -1,0 +1,106 @@
+; Version 2: the guarded operations, plus ONE NEW FLAG.
+;
+; `new-billing` switches to a billing system that bills per tenant, so its
+; enable operation also turns multi-tenancy on. Nothing about the old
+; operations changes.
+;
+; `writ compare config-space.writ config-space-v2.writ` exits 1.
+
+(load "stdlib.writ")
+(load "config-space.lib.writ")
+
+(schema config-space
+
+  (type yn (no yes))
+  (type region-t (eu us))
+  (type db-t (single sharded))
+
+  ; One product deployment's runtime configuration. Four flags and two modes:
+  ; 2 × 2 × 2 × 2 × 2 × 2 = 64 combinations, every one of them a cell value
+  ; writ can enumerate.
+  (type config
+    (arrow sso          (to yn))
+    (arrow legacy-auth  (to yn))
+    (arrow multi-tenant (to yn))
+    (arrow audit-log    (to yn))
+    (arrow region       (to region-t))
+    (arrow db-mode      (to db-t))
+    ; New in v2.
+    (arrow new-billing  (to yn)))
+
+  ; ---- the product's rules ----
+
+  ; Tenants' actions are audited.
+  (equation audit-when-multi-tenant
+    (not (and (is config.multi-tenant yes) (is config.audit-log no))))
+  ; Password login is not offered in the EU deployment.
+  (equation no-legacy-in-eu
+    (not (and (is config.legacy-auth yes) (is config.region eu))))
+  ; Somebody can log in.
+  (equation some-auth
+    (not (and (is config.sso no) (is config.legacy-auth no))))
+  ; The sharded database routes on the SSO tenant id.
+  (equation sharded-needs-sso
+    (not (and (is config.db-mode sharded) (is config.sso no)))))
+
+(instance start config-space
+  (config cfg (sso yes) (legacy-auth no) (multi-tenant no) (audit-log no)
+              (region us) (db-mode single) (new-billing no)))
+
+(use config-space)
+(initial start)
+
+; ---- the admin operations ----
+; Each one checks, in its `when`, the rules it could break. Writing those
+; guards is the work: each is a rule read as a precondition.
+
+(transition enable-sso   (when (is cfg.sso no)) (do (set cfg.sso yes)))
+; Turning SSO off breaks two rules if done carelessly: nobody can log in, or
+; the sharded database loses its routing key.
+(transition disable-sso
+  (when (and (is cfg.sso yes) (is cfg.legacy-auth yes) (is cfg.db-mode single)))
+  (do (set cfg.sso no)))
+
+(transition enable-legacy-auth
+  (when (and (is cfg.legacy-auth no) (is cfg.region us)))
+  (do (set cfg.legacy-auth yes)))
+(transition disable-legacy-auth
+  (when (and (is cfg.legacy-auth yes) (is cfg.sso yes)))
+  (do (set cfg.legacy-auth no)))
+
+(transition enable-multi-tenant
+  (when (and (is cfg.multi-tenant no) (is cfg.audit-log yes)))
+  (do (set cfg.multi-tenant yes)))
+(transition disable-multi-tenant
+  (when (is cfg.multi-tenant yes))
+  (do (set cfg.multi-tenant no)))
+
+(transition enable-audit-log
+  (when (is cfg.audit-log no))
+  (do (set cfg.audit-log yes)))
+(transition disable-audit-log
+  (when (and (is cfg.audit-log yes) (is cfg.multi-tenant no)))
+  (do (set cfg.audit-log no)))
+
+(transition move-to-eu
+  (when (and (is cfg.region us) (is cfg.legacy-auth no)))
+  (do (set cfg.region eu)))
+(transition move-to-us
+  (when (is cfg.region eu))
+  (do (set cfg.region us)))
+
+; Sharding migrates the data. There is no unsharding.
+(transition shard
+  (when (and (is cfg.db-mode single) (is cfg.sso yes)))
+  (do (set cfg.db-mode sharded)))
+
+; ---- new in v2 ----
+
+; The new billing system bills per tenant, so turning it on turns tenancy on.
+; It was reviewed as a billing change.
+(transition enable-new-billing
+  (when (is cfg.new-billing no))
+  (do (set cfg.new-billing yes) (set cfg.multi-tenant yes)))
+(transition disable-new-billing
+  (when (is cfg.new-billing yes))
+  (do (set cfg.new-billing no)))

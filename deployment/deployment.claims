@@ -1,0 +1,36 @@
+; The questions, put to both plans.
+
+(load "deployment.lib.writ")
+
+(property upgrades
+  "the release can finish: every instance on r2, serving, and the schema migrated"
+  (possible (and (all-at-healthy r2) (is db.at v2))))
+
+(property never-dark
+  "production is never dark"
+  (never none-healthy))
+
+(property can-roll-back
+  "from every situation, the fleet can still get back to r1, serving"
+  (live (all-at-healthy r1)))
+
+; ---- ownership ----
+; Every move that changes a release, a state or the schema is on the route of
+; no-mismatch; the guards are what keep it (r1 is never started on v2, and
+; never passes its health check there).
+(accept migrate no-mismatch)
+(accept replace-a-with-r2 no-mismatch)
+(accept replace-b-with-r2 no-mismatch)
+(accept replace-c-with-r2 no-mismatch)
+(accept replace-a-with-r1 no-mismatch)
+(accept replace-b-with-r1 no-mismatch)
+(accept replace-c-with-r1 no-mismatch)
+(accept a-passes-health no-mismatch)
+(accept b-passes-health no-mismatch)
+(accept c-passes-health no-mismatch)
+(accept a-crashes no-mismatch)
+(accept b-crashes no-mismatch)
+(accept c-crashes no-mismatch)
+(accept a-restarts no-mismatch)
+(accept b-restarts no-mismatch)
+(accept c-restarts no-mismatch)

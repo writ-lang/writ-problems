@@ -1,0 +1,11 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; E is held by someone who is no longer entitled to production: they have
+; left, or they have moved off the platform team. Written from the
+; entitlement's side, because a type name cannot be the right of `is`.
+(form (held-by-leaver E)
+  (and (defined E.holder) (is E.holder.status left)))
+(form (held-outside-platform E)
+  (and (defined E.holder) (is E.holder.team marketing)))

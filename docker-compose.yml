@@ -17,6 +17,7 @@ services:
     image: writ-problems
     command: ["river"]
 
+
   # Knights & knaves — the reading that makes the story consistent.
   island:
     build: .
@@ -41,23 +42,56 @@ services:
     image: writ-problems
     command: ["jobshop_best"]
 
-  # Institutional architecture — laws, acknowledgments, and `writ compare` across an amendment.
-  oversight:
-    build: .
-    image: writ-problems
-    command: ["oversight"]
 
-  # A regulated workflow: a declared `gap` where the rules stop.
-  workflow:
-    build: .
-    image: writ-problems
-    command: ["workflow"]
 
-  # Access and privilege, including a one-way latch.
-  access:
+
+  # Separation of duties: the toxic-combination table, and the role it misses.
+  separation-of-duties:
     build: .
     image: writ-problems
-    command: ["access"]
+    command: ["separation_of_duties"]
+
+  # An OU move that leaves the guardrails behind — `writ compare` reports LOST.
+  scp-escalation:
+    build: .
+    image: writ-problems
+    command: ["scp_escalation"]
+
+  # Group-based offboarding, and the direct grant that survives it.
+  joiner-mover-leaver:
+    build: .
+    image: writ-problems
+    command: ["joiner_mover_leaver"]
+
+  # Two approvals, one person: the independence check payment forgot.
+  expense-approval:
+    build: .
+    image: writ-problems
+    command: ["expense_approval"]
+
+  # An AI agent's tool policy: the read-only tool that carries a secret out.
+  agent-guardrails:
+    build: .
+    image: writ-problems
+    command: ["agent_guardrails"]
+
+  # A rolling deploy: the health gate, and the rollback a migration removes.
+  deployment:
+    build: .
+    image: writ-problems
+    command: ["deployment"]
+
+  # Payments: a lost reply, a retry, and the idempotency key.
+  payments:
+    build: .
+    image: writ-problems
+    command: ["payments"]
+
+  # Configuration space: the flag matrix exhausted, and the order that breaks it.
+  config-space:
+    build: .
+    image: writ-problems
+    command: ["config_space"]
 
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.

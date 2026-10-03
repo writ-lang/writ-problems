@@ -1,0 +1,95 @@
+; The same operations, with ONE CONDITION MISSING from one of them: turning
+; SSO off checks that somebody can still log in, and not that the database is
+; unsharded.
+;
+; The check that is there is the obvious one: SSO is an authentication flag,
+; and its guard checks authentication. The one that is gone is about a
+; different subsystem, the database, and a mode that only changes once.
+;
+; `writ check` exits 1 on this file.
+
+(load "stdlib.writ")
+(load "config-space.lib.writ")
+
+(schema config-space
+
+  (type yn (no yes))
+  (type region-t (eu us))
+  (type db-t (single sharded))
+
+  ; One product deployment's runtime configuration. Four flags and two modes:
+  ; 2 × 2 × 2 × 2 × 2 × 2 = 64 combinations, every one of them a cell value
+  ; writ can enumerate.
+  (type config
+    (arrow sso          (to yn))
+    (arrow legacy-auth  (to yn))
+    (arrow multi-tenant (to yn))
+    (arrow audit-log    (to yn))
+    (arrow region       (to region-t))
+    (arrow db-mode      (to db-t))
+)
+
+  ; ---- the product's rules ----
+
+  ; Tenants' actions are audited.
+  (equation audit-when-multi-tenant
+    (not (and (is config.multi-tenant yes) (is config.audit-log no))))
+  ; Password login is not offered in the EU deployment.
+  (equation no-legacy-in-eu
+    (not (and (is config.legacy-auth yes) (is config.region eu))))
+  ; Somebody can log in.
+  (equation some-auth
+    (not (and (is config.sso no) (is config.legacy-auth no))))
+  ; The sharded database routes on the SSO tenant id.
+  (equation sharded-needs-sso
+    (not (and (is config.db-mode sharded) (is config.sso no)))))
+
+(instance start config-space
+  (config cfg (sso yes) (legacy-auth no) (multi-tenant no) (audit-log no)
+              (region us) (db-mode single)))
+
+(use config-space)
+(initial start)
+
+; ---- the admin operations ----
+; Each one checks, in its `when`, the rules it could break. Writing those
+; guards is the work: each is a rule read as a precondition.
+
+(transition enable-sso   (when (is cfg.sso no)) (do (set cfg.sso yes)))
+; Turning SSO off: check that somebody can still log in.
+(transition disable-sso
+  (when (and (is cfg.sso yes) (is cfg.legacy-auth yes)))   ; <- db-mode single, gone
+  (do (set cfg.sso no)))
+
+(transition enable-legacy-auth
+  (when (and (is cfg.legacy-auth no) (is cfg.region us)))
+  (do (set cfg.legacy-auth yes)))
+(transition disable-legacy-auth
+  (when (and (is cfg.legacy-auth yes) (is cfg.sso yes)))
+  (do (set cfg.legacy-auth no)))
+
+(transition enable-multi-tenant
+  (when (and (is cfg.multi-tenant no) (is cfg.audit-log yes)))
+  (do (set cfg.multi-tenant yes)))
+(transition disable-multi-tenant
+  (when (is cfg.multi-tenant yes))
+  (do (set cfg.multi-tenant no)))
+
+(transition enable-audit-log
+  (when (is cfg.audit-log no))
+  (do (set cfg.audit-log yes)))
+(transition disable-audit-log
+  (when (and (is cfg.audit-log yes) (is cfg.multi-tenant no)))
+  (do (set cfg.audit-log no)))
+
+(transition move-to-eu
+  (when (and (is cfg.region us) (is cfg.legacy-auth no)))
+  (do (set cfg.region eu)))
+(transition move-to-us
+  (when (is cfg.region eu))
+  (do (set cfg.region us)))
+
+; Sharding migrates the data. There is no unsharding.
+(transition shard
+  (when (and (is cfg.db-mode single) (is cfg.sso yes)))
+  (do (set cfg.db-mode sharded)))

@@ -1,0 +1,32 @@
+; The same four questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "payments.lib.writ")
+
+(satisfies settles (is o.stage settled))
+
+(satisfies never-double (is proc.captures two))
+
+(satisfies never-charged-for-nothing (and charged-for-nothing quiet))
+
+(satisfies ended terminal)
+(can-reach can-end ended)
+(trapped always-terminal can-end)
+
+; ---- the explanation ----
+; Where the double charge leaves the order, as the shop sees it: its stage,
+; and whether it shipped. The rows cover every stage there is: settled and
+; shipped, refunded (one capture given back, one kept), cancelled. Nothing on
+; the shop's side marks them, which is why this reaches support as a customer
+; complaint and not as an alert.
+(relation double-charged (Situation stage-t yn))
+(rule (double-charged S G Y)
+  (situation S)
+  (holds S (is proc.captures two))
+  (holds S (is o.stage G))
+  (holds S (is o.shipment Y)))

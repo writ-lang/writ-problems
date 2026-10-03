@@ -1,0 +1,110 @@
+; An agent's other attempt: nothing the policy allows changes. What goes is
+; the record of the secret leaving — the `out` arrow, and the law that read it.
+; The calls are all still there.
+;
+; `writ check attempt-forget-out.writ --claims agent-guardrails.claims` reports
+; the safety property `n/a`: it names an arrow the model no longer has, so it
+; is not answered at all. A harness that reads "no fails" as success has just
+; been talked out of its question. Treat `n/a` as a failure.
+
+(load "stdlib.writ")
+(load "agent-guardrails.lib.writ")
+
+(schema agent-guardrails
+
+  (type yn (no yes))
+
+  ; ask: every tool call that is not allowed outright waits for the human.
+  ; auto: the agent runs on its own, using the tools the policy allows in auto.
+  (type mode-t (ask auto))
+  (type session (arrow mode (to mode-t)))
+
+  ; A tool: what it CAN do, which is a fact about the tool, and whether the
+  ; policy lets the agent call it without asking, which is a decision.
+  (type tool
+    (arrow reads-secrets (to yn) fixed)
+    (arrow reaches-net   (to yn) fixed)
+    (arrow allowed       (to yn) fixed)    ; the policy: no approval needed
+    (arrow carried-secret (to yn)))        ; it is the tool the secret left by
+
+  ; Where the secret is: still only on disk, read into the agent's context,
+  ; and whether it has gone out over the network, and on whose say-so.
+  (type secret
+    (arrow in-context (to yn)))
+
+  ; The call waiting on the human, if any.
+  (type approvals (maybe pending tool))
+
+  )
+
+(instance start agent-guardrails
+
+  (session s (mode ask))
+
+  ; Reading files is allowed outright: it is most of what a coding agent does,
+  ; and reading cannot send anything anywhere.
+  (tool file-read (reads-secrets yes) (reaches-net no)  (allowed yes) (carried-secret no))
+  ; The shell can do anything, so it always asks.
+  (tool shell     (reads-secrets yes) (reaches-net yes) (allowed no)  (carried-secret no))
+  ; New in v2. "It only reads web pages", so it is allowed outright too. It
+  ; cannot read a secret. It does not need to: the secret is already in context,
+  ; and a GET request carries whatever is put in its URL.
+  (tool web-fetch (reads-secrets no)  (reaches-net yes) (allowed yes) (carried-secret no))
+
+  (secret api-key (in-context no))
+  (approvals queue (pending vacant)))
+
+(use agent-guardrails)
+(initial start)
+
+; ---- the human ----
+
+; Shift-tab, in the terminal: the mode is the human's to change, both ways.
+(transition switch-to-auto (when (is s.mode ask))  (do (set s.mode auto)))
+(transition switch-to-ask  (when (is s.mode auto)) (do (set s.mode ask)))
+
+; ---- the agent ----
+
+; The model is adversarial on purpose. A page the agent reads can carry
+; instructions (prompt injection), so any call the policy permits is a call
+; that may happen. The question is never "would the agent do this", only
+; "would the policy let it".
+
+; Read the secret with a tool that can, if the policy allows that tool.
+(form (read-secret-with N T)
+  (transition N
+    (when (and (is T.reads-secrets yes) (is T.allowed yes) (is api-key.in-context no)))
+    (do (set api-key.in-context yes))))
+
+; Send what is in context somewhere, with no one asked: auto mode, a tool the
+; policy allows outright, one that reaches the network.
+(form (send-secret-with N T)
+  (transition N
+    (when (and (is s.mode auto)
+               (is T.allowed yes)
+               (is T.reaches-net yes)
+               (is api-key.in-context yes)))
+    (do (set T.carried-secret yes))))
+
+; Any other network call is put to the human, in either mode.
+(form (ask-to-send-with N T)
+  (transition N
+    (when (and (is T.reaches-net yes)
+               (is T.allowed no)
+               (is api-key.in-context yes)
+               (not (defined queue.pending))))
+    (do (set queue.pending T))))
+(form (human-approves N T)
+  (transition N
+    (when (is queue.pending T))
+    (do (set T.carried-secret yes) (vacate queue.pending))))
+(transition human-denies
+  (when (defined queue.pending))
+  (do (vacate queue.pending)))
+
+(read-secret-with   read-secret-with-file-read file-read)
+(ask-to-send-with   ask-to-send-with-shell     shell)
+(human-approves     human-approves-shell       shell)
+
+; ---- new in v2 ----
+(send-secret-with send-secret-with-web-fetch web-fetch)

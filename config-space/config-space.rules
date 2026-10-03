@@ -1,0 +1,29 @@
+; The same four questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "config-space.lib.writ")
+
+(satisfies fully-featured
+  (and (is cfg.multi-tenant yes) (is cfg.sso yes) (is cfg.db-mode sharded) safe))
+
+(satisfies never-unsafe (not safe))
+
+(satisfies is-safe safe)
+(can-reach can-be-safe is-safe)
+(trapped recoverable can-be-safe)
+
+(satisfies in-us (is cfg.region us))
+(can-reach can-get-to-us in-us)
+(trapped can-leave-eu can-get-to-us)
+
+; ---- what the latch costs ----
+; `final-phase` (ct.rules §3): the configurations in the last phase, the ones
+; that can never get back to an earlier one. Asked with no goal in mind.
+; Projected onto the database mode, which is the cell that says why.
+(relation final-db (Situation db-t))
+(rule (final-db S D) (final-phase S) (holds S (is cfg.db-mode D)))

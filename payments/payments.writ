@@ -1,0 +1,133 @@
+; A payment's lifecycle, over a network that loses replies.
+;
+; The shop authorizes the customer's card, asks the processor to capture the
+; money, and settles. It can ship, refund, or cancel. The processor's reply can
+; be lost; the shop then retries, as every payment integration does. The
+; retry carries an idempotency key, so the processor recognises it.
+;
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "payments.lib.writ")
+
+(schema payments
+
+  (type yn (no yes))
+
+  ; The shop's view of the order.
+  (type stage-t (placed authorized captured settled refunded cancelled))
+  (type order
+    (arrow stage    (to stage-t))
+    (arrow shipment (to yn)))
+
+  ; The wire: a capture request on its way to the processor, and the
+  ; processor's reply on its way back. Either may be in flight; the reply can
+  ; be lost.
+  (type wire
+    (arrow request (to yn))
+    (arrow reply   (to yn))
+    (arrow void    (to yn)))
+
+  ; The processor's view. How many times it has taken the money, not how much:
+  ; none, one, or two, and two is the bug. Whether it has refunded. And the
+  ; idempotency keys it has already honoured.
+  (type count (none one two))
+  (type key-t (k1))
+  (type processor
+    (arrow captures (to count))
+    (arrow refunded (to yn))
+    (maybe seen key-t))
+
+  ; ---- the rules ----
+
+  ; The customer is charged at most once.
+  (equation one-capture (not (is processor.captures two)))
+
+  ; A cancelled order never ships.
+  (equation cancelled-never-ships
+    (not (and (is order.stage cancelled) (is order.shipment yes)))))
+
+(instance start payments
+  (order o (stage placed) (shipment no))
+  (wire net (request no) (reply no) (void no))
+  (processor proc (captures none) (refunded no) (seen vacant)))
+
+(use payments)
+(initial start)
+
+; ---- the shop ----
+
+(transition authorize
+  (when (is o.stage placed))
+  (do (set o.stage authorized)))
+
+; Ask the processor to capture. The same move is the first attempt and every
+; retry: whenever the shop is waiting on a capture and has no request out and
+; no reply in, it sends one. That is what a timeout-and-retry loop does.
+(transition send-capture
+  (when (and (is o.stage authorized) (is net.request no) (is net.reply no)))
+  (do (set net.request yes)))
+
+(transition receive-reply
+  (when (and (is net.reply yes) (is o.stage authorized)))
+  (do (set net.reply no) (set o.stage captured)))
+
+; A reply for an order the shop has already cancelled is dropped.
+(transition discard-late-reply
+  (when (and (is net.reply yes) (is o.stage cancelled)))
+  (do (set net.reply no)))
+
+(transition settle
+  (when (is o.stage captured))
+  (do (set o.stage settled)))
+
+(transition ship
+  (when (and (or (is o.stage captured) (is o.stage settled)) (is o.shipment no)))
+  (do (set o.shipment yes)))
+
+(transition refund
+  (when (and (or (is o.stage captured) (is o.stage settled)) (is o.shipment no)))
+  (do (set o.stage refunded) (set proc.refunded yes)))
+
+; Cancel an order the shop has not captured. From its own view no money
+; moved, but a capture request may be out, or may have landed and lost its
+; reply. So cancelling also tells the processor to void the payment.
+;
+; The first draft of this file cancelled without the void, and writ found it:
+; authorize, send the capture, cancel, and the capture lands after the
+; cancellation. See the README.
+(transition cancel
+  (when (and (or (is o.stage placed) (is o.stage authorized)) (is o.shipment no)))
+  (do (set o.stage cancelled) (set net.void yes)))
+
+; ---- the network ----
+
+; The processor's reply never arrives: a timeout, a dropped connection, a
+; load balancer restart. The capture itself happened.
+(transition lose-reply
+  (when (is net.reply yes))
+  (do (set net.reply no)))
+
+; ---- the processor ----
+
+; Every request carries the idempotency key k1. A key the processor has not
+; seen is a capture; a key it has seen gets the original reply again, and no
+; second capture.
+(transition capture
+  (when (and (is net.request yes) (is proc.captures none) (not (is proc.seen k1))))
+  (do (set net.request no) (set proc.captures one) (set proc.seen k1) (set net.reply yes)))
+(transition capture-again
+  (when (and (is net.request yes) (is proc.captures one) (not (is proc.seen k1))))
+  (do (set net.request no) (set proc.captures two) (set net.reply yes)))
+; A void under the same key: refund a capture already made, and mark the key
+; used, so a capture request still on the wire is replayed, not honoured.
+(transition void-captured
+  (when (and (is net.void yes) (is proc.captures one)))
+  (do (set net.void no) (set proc.refunded yes) (set proc.seen k1)))
+(transition void-uncaptured
+  (when (and (is net.void yes) (is proc.captures none)))
+  (do (set net.void no) (set proc.seen k1)))
+(transition replay-reply
+  (when (and (is net.request yes) (is proc.seen k1)))
+  (do (set net.request no) (set net.reply yes)))
+

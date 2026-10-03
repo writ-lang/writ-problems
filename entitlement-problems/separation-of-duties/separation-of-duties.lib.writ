@@ -1,0 +1,27 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; A holds, through its two group slots, both the power to raise a payment and
+; the power to approve one. Spelled out over every pair of slots, the same slot
+; twice included: a single group whose role carries both is a conflict too.
+; It is rooted at ONE account because two bound accounts cannot be compared;
+; that is also why the slots are bounded (see the README).
+(form (conflicted A)
+  (or (and (is A.g1.role.can-request yes) (is A.g1.role.can-approve yes))
+      (and (is A.g1.role.can-request yes) (is A.g2.role.can-approve yes))
+      (and (is A.g2.role.can-request yes) (is A.g1.role.can-approve yes))
+      (and (is A.g2.role.can-request yes) (is A.g2.role.can-approve yes))))
+
+; What joining group G would add to account A, whose OTHER slot is OTHER.
+; The capability check: read through the group to its role.
+(form (grant-conflicts G OTHER)
+  (or (and (is G.role.can-request yes) (is G.role.can-approve yes))
+      (and (is G.role.can-request yes) (is OTHER.role.can-approve yes))
+      (and (is G.role.can-approve yes) (is OTHER.role.can-request yes))))
+
+; The name check: the toxic-combination table as an IAM team writes it — two
+; groups that must never be held together, listed by name.
+(form (listed-pair G OTHER)
+  (or (and (is G requesters) (is OTHER approvers))
+      (and (is G approvers)  (is OTHER requesters))))

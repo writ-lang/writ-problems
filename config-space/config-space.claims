@@ -1,0 +1,35 @@
+; The questions, put to every version.
+
+(load "config-space.lib.writ")
+
+(property fully-featured
+  "a safe configuration with tenants, SSO and a sharded database exists"
+  (possible (and (is cfg.multi-tenant yes) (is cfg.sso yes) (is cfg.db-mode sharded) safe)))
+
+(property never-unsafe
+  "no configuration the product forbids is ever reached"
+  (never (not safe)))
+
+(property recoverable
+  "from every configuration, a safe one is still reachable"
+  (live safe))
+
+(property can-leave-eu
+  "from every configuration, the deployment can still be moved to the US"
+  (live (is cfg.region us)))
+
+; ---- ownership ----
+; Every operation that writes a cell a rule reads. The guards are what keep
+; the rules; a release that adds an operation adds a line here, or writ reports
+; it as unadmitted.
+(accept enable-multi-tenant  audit-when-multi-tenant)
+(accept disable-multi-tenant audit-when-multi-tenant)
+(accept enable-audit-log     audit-when-multi-tenant)
+(accept disable-audit-log    audit-when-multi-tenant)
+(accept enable-legacy-auth   no-legacy-in-eu some-auth)
+(accept disable-legacy-auth  no-legacy-in-eu some-auth)
+(accept move-to-eu           no-legacy-in-eu)
+(accept move-to-us           no-legacy-in-eu)
+(accept enable-sso           some-auth sharded-needs-sso)
+(accept disable-sso          some-auth sharded-needs-sso)
+(accept shard                sharded-needs-sso)

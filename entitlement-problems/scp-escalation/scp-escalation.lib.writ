@@ -1,0 +1,21 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; What a principal can effectively do: the role it has assumed grants the
+; action, AND the service control policy of the OU that role's account sits in
+; does not deny it. That conjunction is the whole of the AWS evaluation this
+; model keeps (see the README for what it leaves out).
+;
+; One form per action, because a form parameter cannot name an arrow.
+(form (writes-prod P)
+  (and (is P.assumed.prod-write yes)
+       (is P.assumed.in.ou.deny-prod-write no)))
+
+(form (edits-cloudtrail P)
+  (and (is P.assumed.cloudtrail-edit yes)
+       (is P.assumed.in.ou.deny-cloudtrail-edit no)))
+
+(form (reads-audit P)
+  (and (is P.assumed.audit-read yes)
+       (is P.assumed.in.ou.deny-audit-read no)))
