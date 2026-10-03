@@ -431,18 +431,19 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The twenty scenarios this script walks by convention, and their 56
+  # The twenty-one scenarios this script walks by convention, and their 60
   # properties. `calculation/` and `gotha/` are not among them: each carries its
   # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the twenty fails this line, which is the point of it —
+  # property to any of the twenty-one fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
   # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
   # 45 -> 49 with agent-guardrails, 49 -> 52 with deployment, 52 -> 56 with
-  # payments, and this line is where each of those had to be said out loud.
-  has "cross-check: all 56 properties of the twenty scenarios were considered" \
-    "$out" "considered 56 properties: 54 compared, 2 not compared"
-  # Two of the 56 are not compared, and the count above is the only place that
+  # payments, 56 -> 60 with config-space, and this line is where each of those
+  # had to be said out loud.
+  has "cross-check: all 60 properties of the twenty-one scenarios were considered" \
+    "$out" "considered 60 properties: 58 compared, 2 not compared"
+  # Two of the 60 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -459,9 +460,10 @@ crosscheck() {
   # measured. If it ever reads "unexercised" again, a scenario went missing.
   # two-phase-commit's atomicity is the third; the entitlement problems bring
   # four more, since "nobody ever holds X" is how an access rule is said, and
-  # expense-approval, agent-guardrails and deployment one each, payments two.
+  # expense-approval, agent-guardrails, deployment and config-space one each,
+  # payments two.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 12 properties compared"
+    "never: 13 properties compared"
   # And `inevitable`, two of whose three are two-phase-commit's — the newest
   # modality, and the one whose second implementation is newest, so the line
   # that says it is being compared at all is worth having. The third is
@@ -840,9 +842,52 @@ payments() {
   has "payments: G. double charges hide in orders that settled and shipped" "$dv" "settled  yes"
 }
 
+config_space() {
+  d="$here/config-space"
+  c="$d/config-space.claims"
+  echo "== The configuration space — every combination, not a sample =="
+  echo "   Q: can the admin operations reach a combination the product forbids?"
+  out=$("$WRIT" check "$d/config-space.writ" --claims "$c" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "config-space: the guarded operations are clean" "$st" 0
+  has "config-space: A. 21 of the 64 combinations are reachable" "$out" "states: 21"
+  has "config-space: B. a fully-featured safe configuration exists" "$out" "holds  fully-featured"
+  has "config-space: C. none the product forbids" "$out" "holds  never-unsafe"
+  lacks "config-space:    nothing is violated" "$out" "violated in"
+
+  sc=$("$WRIT" check "$d/config-space-shortcut.writ" --claims "$c" --fiber cfg.region 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "config-space: one forgotten check is refused" "$sst" 1
+  # The order finding: every step is allowed, and only this order gets there —
+  # turning SSO off first would block the shard.
+  has "config-space: D. the forbidden state, in one order of three allowed steps" "$sc" \
+    "violated in 3 reachable situations   witness: 1. enable-legacy-auth 2. shard 3. disable-sso"
+  has "config-space: E. yet every configuration can still be made safe" "$sc" "holds  recoverable"
+  # FR-10's fibers: the same question per region. Legacy auth is forbidden in
+  # the EU, and it is the first step of the route.
+  has "config-space: F. only the US deployment can reach it" "$sc" "fiber cfg.region=us   FAILS"
+  has "config-space:    the EU one cannot" "$sc" "fiber cfg.region=eu   holds"
+
+  cmp=$("$WRIT" compare "$d/config-space.writ" "$d/config-space-v2.writ" 2>&1)
+  cst=$?
+  printf '%s\n' "$cmp" | sed 's/^/     | /'
+  exit_is "config-space: compare refuses the release that adds a flag" "$cst" 1
+  has "config-space: G. the new flag reaches a forbidden state in one move" "$cmp" \
+    "never-unsafe             LOST      witness: 1. enable-new-billing"
+  v2=$("$WRIT" check "$d/config-space-v2.writ" --claims "$c" 2>&1)
+  has "config-space:    an operation the claims never acknowledged" "$v2" \
+    "unadmitted  enable-new-billing may break audit-when-multi-tenant"
+
+  dv=$("$WRIT" derive "$d/config-space.writ" "$d/config-space.rules" final-db 2>&1)
+  has "config-space: H. the last phase is the sharded configurations" "$dv" "final-db  (9 rows)"
+  lacks "config-space:    and only those" "$dv" "single"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

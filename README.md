@@ -57,6 +57,7 @@ Many `writ check` runs **exit 1** on purpose: a failing property is a finding
 | [`agent-guardrails/`](agent-guardrails/) | Can an AI agent's secret leave the machine with no human saying yes? | Not under v1. Add a "read-only" web-fetch and it can, in three moves, none of them human's. |
 | [`deployment/`](deployment/) | Is production ever dark mid-rollout, and can the fleet always roll back? | Never dark behind a health gate; but after the migration, the runbook's rollback is unreachable for good. |
 | [`payments/`](payments/) | Can a lost reply and a retry charge a customer twice? | Without an idempotency key, in six steps, each correct where it stood. The key also stops a late capture beating a cancellation. |
+| [`config-space/`](config-space/) | Can the admin operations reach a flag combination the product forbids? | All 64 combinations walked: only if steps are done in one order. A release adding a flag loses the guarantee in one move. |
 | [`two-phase-commit/`](two-phase-commit/) | Do the parties agree, and must they decide? | Always agree; a coordinator crash can strand them. Variants price a timeout and a lossy network. |
 
 **Design, judgement and change**

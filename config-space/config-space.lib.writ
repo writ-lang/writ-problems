@@ -1,0 +1,10 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; The product's four rules, as one test: a configuration none of them forbids.
+(form safe
+  (and (not (and (is cfg.multi-tenant yes) (is cfg.audit-log no)))
+       (not (and (is cfg.legacy-auth yes) (is cfg.region eu)))
+       (not (and (is cfg.sso no) (is cfg.legacy-auth no)))
+       (not (and (is cfg.db-mode sharded) (is cfg.sso no)))))

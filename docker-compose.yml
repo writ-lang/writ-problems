@@ -101,6 +101,12 @@ services:
     image: writ-problems
     command: ["payments"]
 
+  # Configuration space: the flag matrix exhausted, and the order that breaks it.
+  config-space:
+    build: .
+    image: writ-problems
+    command: ["config_space"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:
