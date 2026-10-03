@@ -57,6 +57,24 @@ river() {
   near "river:    stranding prey with its predator is the mistake" "$out" "fails  no-blunders" "stuck at:"
 }
 
+island() {
+  echo "== Knights & knaves (kernel-spec Appendix D) =="
+  echo "   Q: can every native be classified, and who could be a knight?"
+  out=$("$WRIT" check "$here/island/island.writ" --claims "$here/island/island.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "island: check reports findings" "$st" 1
+  has "island: 9 reachable situations" "$out" "states: 9"
+  has "island: A. the rules run out — a gap" "$out" "gaps: 1"
+  has "island:    the hole is reading cal, the knave-sayer" "$out" "read-cal —"
+  has "island:    the rules are silent there" "$out" "rules are silent"
+  has "island: B. NOT everyone is classifiable" "$out" "fails  census-completable"
+  has "island: C. abe could be a knight" "$out" "holds  abe-can-be-knight"
+  near "island:    and writ shows the reading that makes it so" "$out" "holds  abe-can-be-knight" "abe-is-knight"
+  has "island:    bea could be a knight" "$out" "holds  bea-can-be-knight"
+  has "island:    cal could be nothing at all" "$out" "fails  cal-can-be-knight"
+}
+
 queens() {
   echo "== Eight queens =="
   echo "   Q: can eight queens stand on a board with none attacking another?"
@@ -85,23 +103,6 @@ queens() {
   fi
 }
 
-island() {
-  echo "== Knights & knaves (kernel-spec Appendix D) =="
-  echo "   Q: can every native be classified, and who could be a knight?"
-  out=$("$WRIT" check "$here/island/island.writ" --claims "$here/island/island.claims" 2>&1)
-  st=$?
-  printf '%s\n' "$out" | sed 's/^/     | /'
-  exit_is "island: check reports findings" "$st" 1
-  has "island: 9 reachable situations" "$out" "states: 9"
-  has "island: A. the rules run out — a gap" "$out" "gaps: 1"
-  has "island:    the hole is reading cal, the knave-sayer" "$out" "read-cal —"
-  has "island:    the rules are silent there" "$out" "rules are silent"
-  has "island: B. NOT everyone is classifiable" "$out" "fails  census-completable"
-  has "island: C. abe could be a knight" "$out" "holds  abe-can-be-knight"
-  near "island:    and writ shows the reading that makes it so" "$out" "holds  abe-can-be-knight" "abe-is-knight"
-  has "island:    bea could be a knight" "$out" "holds  bea-can-be-knight"
-  has "island:    cal could be nothing at all" "$out" "fails  cal-can-be-knight"
-}
 
 jobshop_possible() {
   echo "== A blocking job shop =="
@@ -145,46 +146,7 @@ jobshop_best() {
     "holds  done-by-5" "3. tick"
 }
 
-oversight() {
-  echo "== Institutional architecture (kernel-spec §3, §4 running example) =="
-  echo "   Q: can one lawful move permanently destroy accountability, and what"
-  echo "      does repealing restoration actually cost?"
-  out=$("$WRIT" check "$here/oversight/oversight.writ" --claims "$here/oversight/oversight.claims" 2>&1)
-  st=$?
-  printf '%s\n' "$out" | sed 's/^/     | /'
-  exit_is "oversight: check reports findings" "$st" 1
-  has "oversight: A. our own powers can violate our own law" "$out" "equation same-agency"
-  has "oversight:    the law's breakers are named" "$out" "can be broken by: capture-watchdog, restore-watchdog"
-  lacks "oversight:    and both are accepted — nothing unadmitted" "$out" "unadmitted"
-  has "oversight: B. the case can conclude" "$out" "holds  conviction-possible"
-  near "oversight:    and writ prints the concluding move" "$out" "holds  conviction-possible" "witness:"
-  has "oversight: C. accountability holds (restoration exists)" "$out" "holds  accountability"
 
-  echo "   Q: this amendment repeals restoration — what does it change?"
-  cmp=$("$WRIT" compare "$here/oversight/oversight.writ" "$here/oversight/oversight-repeal.writ" 2>&1)
-  cst=$?
-  printf '%s\n' "$cmp" | sed 's/^/     | /'
-  exit_is "oversight: compare reports a loss" "$cst" 1
-  has "oversight: D. the repeal LOSES accountability" "$cmp" "accountability       LOST"
-  near "oversight:    one capture now traps the case forever" "$cmp" "accountability" "capture-watchdog"
-  has "oversight:    same-agency itself is preserved" "$cmp" "same-agency          preserved"
-}
-
-workflow() {
-  echo "== Regulated workflow — KYC / claims (kernel-spec §3) =="
-  echo "   Q: where does automation end, which reassignments break the law, and"
-  echo "      can a case get stuck?"
-  out=$("$WRIT" check "$here/workflow/workflow.writ" --claims "$here/workflow/workflow.claims" 2>&1)
-  st=$?
-  printf '%s\n' "$out" | sed 's/^/     | /'
-  exit_is "workflow: check reports findings" "$st" 1
-  has "workflow: A. automation ends at an escalation gap" "$out" "gaps: 1"
-  has "workflow:    the gap hands off to a human" "$out" "escalated to a human"
-  has "workflow: B. the unit-of-record law's breakers are named" "$out" "can be broken by: reassign-to-fraud, reassign-to-kyc"
-  lacks "workflow:    and both reassignments are accepted" "$out" "unadmitted"
-  has "workflow: C. no case gets stuck — always still settleable" "$out" "holds  settle-able"
-  has "workflow:    and the assignee slot stays fillable" "$out" "holds  assignee-fillable"
-}
 
 two_phase_commit() {
   d="$here/two-phase-commit"
@@ -234,109 +196,8 @@ two_phase_commit() {
   has "2pc:    including the plain reachability one" "$cmp" "can-decide              gained"
 }
 
-access() {
-  echo "== Access & privilege (kernel-spec §3) =="
-  echo "   Q: is revocation always possible, or is some privilege permanent?"
-  out=$("$WRIT" check "$here/access/access.writ" --claims "$here/access/access.claims" 2>&1)
-  st=$?
-  printf '%s\n' "$out" | sed 's/^/     | /'
-  exit_is "access: check reports findings" "$st" 1
-  has "access: A. the root-tracing law's breaker is named" "$out" "can be broken by: delegate-alice-to-mallory"
-  lacks "access:    and the delegation is accepted" "$out" "unadmitted"
-  has "access: B. revocation is NOT always possible — a latch" "$out" "fails  revocation-possible"
-  near "access:    the break-glass grant is the latching move" "$out" "fails  revocation-possible" "grant-breakglass-admin"
-  near "access:    it strands the state with mallory admin forever" "$out" "fails  revocation-possible" "mallory.role=admin"
-  has "access: C. the admins query is answered" "$out" "admins  (at state"
-}
 
-gotha() {
-  echo "== A claim about common ownership, put to the test =="
-  echo "   Q: \"once the means of production are held in common, no surplus is"
-  echo "      disposed of by anyone who does not work them\" — does it survive?"
-  out=$("$WRIT" check "$here/gotha/gotha.writ" --claims "$here/gotha/gotha.claims" 2>&1)
-  st=$?
-  printf '%s\n' "$out" | sed 's/^/     | /'
-  exit_is "gotha: check reports findings" "$st" 1
-  has "gotha: seven situations — the whole world of the claim" "$out" "states: 7"
-  has "gotha: A. the antecedent is reached: the mill DOES become common" "$out" \
-    "holds  expropriation-succeeds"
-  near "gotha:    expropriation, then distribution to the weavers" "$out" \
-    "holds  expropriation-succeeds" "1. expropriate"
-  has "gotha: B. and the claim is REFUTED" "$out" "fails  no-exploitation"
-  near "gotha:    the falsifier begins with the expropriation itself" "$out" \
-    "fails  no-exploitation" "1. expropriate"
-  near "gotha:    someone must administer the deductions" "$out" \
-    "fails  no-exploitation" "2. appoint-board"
-  near "gotha:    and Gotha's own second deduction is what breaks it" "$out" \
-    "fails  no-exploitation" "3. fund-administration"
-  has "gotha: C. but the condition is not a trap — recall still works" "$out" \
-    "holds  exploitation-endable"
-  has "gotha: D. the programme's own law is broken before AND after" "$out" \
-    "violated in 3 reachable situations"
-  has "gotha:    by the three moves that write the surplus" "$out" \
-    "can be broken by: expropriate, distribute, fund-administration"
-  lacks "gotha:    all three acknowledged — nothing unadmitted" "$out" "unadmitted"
-  has "gotha: E. and the non-producers are named" "$out" "non-producers  (at state"
 
-  echo "   Q: does the rules engine reach the same three verdicts?"
-  xc=$(WRIT="$WRIT" sh "$here/gotha/cross-check.sh" 2>&1)
-  xst=$?
-  printf '%s\n' "$xc" | sed 's/^/     | /'
-  exit_is "gotha: check and derive agree on all three" "$xst" 0
-  has "gotha:    the refutation survives a second implementation" "$xc" \
-    "no-exploitation (never): 1 rows"
-}
-
-calculation() {
-  echo "== The calculation problem — one allotment of steel, three plants =="
-  echo "   Q: two economies differing in ONE guard, asked the SAME questions —"
-  echo "      which guarantees does the difference cost?"
-
-  echo "   1/2: prices — the ask must be backed by the plant's own need"
-  mkt=$("$WRIT" check "$here/calculation/market.writ" --claims "$here/calculation/market.claims" 2>&1)
-  mst=$?
-  printf '%s\n' "$mkt" | sed 's/^/     | /'
-  exit_is "calculation: the priced model is clean" "$mst" 0
-  has "calculation: A. the steel can reach a plant that needs it" "$mkt" "holds  need-can-be-met"
-  near "calculation:    and writ prints the route it takes" "$mkt" "holds  need-can-be-met" "allocate-clinic"
-  has "calculation:    it is never built where it is not needed" "$mkt" "holds  no-waste"
-  has "calculation:    and that stays true from every situation" "$mkt" "holds  need-always-still-meetable"
-  lacks "calculation:    the model's own law is never violated" "$mkt" "violated in"
-  lacks "calculation:    and nothing is unadmitted" "$mkt" "unadmitted"
-
-  echo "   2/2: the plan — the same file with that one conjunct repealed"
-  pln=$("$WRIT" check "$here/calculation/planned.writ" --claims "$here/calculation/market.claims" 2>&1)
-  pst=$?
-  printf '%s\n' "$pln" | sed 's/^/     | /'
-  exit_is "calculation: the planned model reports findings" "$pst" 1
-  has "calculation: B. the plan is NOT incapable — it can still get it right" "$pln" "holds  need-can-be-met"
-  has "calculation:    but waste is permitted by its rules" "$pln" "fails  no-waste"
-  near "calculation:    a costless request is what buys the steel" "$pln" "fails  no-waste" "ask-monument-high"
-  near "calculation:    and the monument gets it" "$pln" "fails  no-waste" "allocate-monument"
-  has "calculation: C. and the waste is terminal, not a delay" "$pln" "fails  need-always-still-meetable"
-  near "calculation:    steel welded into a statue is steel no longer" "$pln" "fails  need-always-still-meetable" "steel.state=built"
-  has "calculation: D. it violates the law both models declare" "$pln" "violated in 24 reachable situations"
-  has "calculation:    and has no procedure for what requests omit" "$pln" "gaps: 1"
-  has "calculation:    which is written down as a gap, not invented" "$pln" "no request carries"
-  lacks "calculation:    the same nine acknowledgments serve both models" "$pln" "unadmitted"
-
-  echo "   Q: what does the repeal cost, as one command?"
-  cmp=$("$WRIT" compare "$here/calculation/market.writ" "$here/calculation/planned.writ" 2>&1)
-  cst=$?
-  printf '%s\n' "$cmp" | sed 's/^/     | /'
-  exit_is "calculation: compare reports a loss" "$cst" 1
-  has "calculation: E. no-waste is LOST" "$cmp" "no-waste                    LOST"
-  has "calculation:    and so is the recovery from waste" "$cmp" "need-always-still-meetable  LOST"
-  has "calculation:    while the ability to get it right is preserved" "$cmp" "need-can-be-met             preserved"
-
-  echo "   Q: does the rules engine reach the same verdicts, for BOTH models?"
-  xc=$(WRIT="$WRIT" sh "$here/calculation/cross-check.sh" 2>&1)
-  xst=$?
-  printf '%s\n' "$xc" | sed 's/^/     | /'
-  exit_is "calculation: check and derive agree on all six" "$xst" 0
-  has "calculation:    including the plan's failing never" "$xc" \
-    "planned/no-waste (never): 8 rows"
-}
 
 arch() {
   echo "== System architecture from a component bank =="
@@ -380,17 +241,17 @@ arch() {
 control() {
   echo "== writ control — a model's dynamics as data (kernel-spec §17) =="
   echo "   Q: can we export the move list and re-use it with the same machinery?"
-  out=$("$WRIT" control "$here/oversight/oversight.writ" 2>&1)
+  out=$("$WRIT" control "$here/payments/payments.writ" 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "control: emits cleanly" "$st" 0
   has "control: it is an instance of the stdlib quiver schema" "$out" "-control quiver"
-  has "control: an edge per transition — capture-watchdog" "$out" "capture-watchdog"
-  has "control:    ... and assign-judge" "$out" "assign-judge"
+  has "control: an edge per transition — capture-again" "$out" "capture-again"
+  has "control:    ... and void-uncaptured" "$out" "void-uncaptured"
   # Prove the emitted quiver is real data: wrap it as a model and re-check it.
   tmp=$(mktemp -d)
   printf '%s\n' "$out" >"$tmp/ctrl.writ"
-  printf '(load "ctrl.writ")\n(use quiver)\n(initial oversight-control)\n' >"$tmp/wrap.writ"
+  printf '(load "ctrl.writ")\n(use quiver)\n(initial payments-control)\n' >"$tmp/wrap.writ"
   if (cd "$tmp" && "$WRIT" check wrap.writ >/dev/null 2>&1); then
     ok "control: the emitted quiver re-parses and builds"
   else bad "control: the emitted quiver did not re-parse"; fi
@@ -404,22 +265,23 @@ gitcompare() {
     printf '  [skip] writ compare --git needs git (not installed here)\n'
     return 0
   fi
-  # A self-contained history: commit the law, then commit the repeal, in a
-  # throwaway repo — so the demo is deterministic and needs no shared history.
+  # A self-contained history: commit the keyed payment flow, then commit the
+  # shortcut that drops the idempotency key, in a throwaway repo — so the demo
+  # is deterministic and needs no shared history.
   tmp=$(mktemp -d)
-  cp "$here/oversight/oversight.writ" "$tmp/law.writ"
-  cp "$here/oversight/oversight.claims" "$tmp/law.claims"
-  (cd "$tmp" && git init -q && git add law.writ law.claims &&
-    git -c user.email=t@t -c user.name=t commit -qm "v1: with restoration") >/dev/null 2>&1
-  cp "$here/oversight/oversight-repeal.writ" "$tmp/law.writ"
-  (cd "$tmp" && git add law.writ &&
-    git -c user.email=t@t -c user.name=t commit -qm "amendment: repeal restoration") >/dev/null 2>&1
-  out=$(cd "$tmp" && "$WRIT" compare --git HEAD~1 HEAD law.writ 2>&1)
+  d="$here/payments"
+  cp "$d/payments.writ" "$d/payments.claims" "$d/payments.lib.writ" "$tmp/"
+  (cd "$tmp" && git init -q && git add . &&
+    git -c user.email=t@t -c user.name=t commit -qm "v1: with the idempotency key") >/dev/null 2>&1
+  cp "$d/payments-shortcut.writ" "$tmp/payments.writ"
+  (cd "$tmp" && git add payments.writ &&
+    git -c user.email=t@t -c user.name=t commit -qm "amendment: drop the key") >/dev/null 2>&1
+  out=$(cd "$tmp" && "$WRIT" compare --git HEAD~1 HEAD payments.writ 2>&1)
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "git-compare: the amendment loses a guarantee" "$st" 1
-  has "git-compare: accountability is LOST across the two commits" "$out" "accountability       LOST"
-  has "git-compare: same-agency is preserved" "$out" "same-agency          preserved"
+  has "git-compare: never-double is LOST across the two commits" "$out" "never-double               LOST"
+  has "git-compare: one-capture is preserved" "$out" "one-capture                preserved"
   rm -rf "$tmp"
 }
 
@@ -431,19 +293,18 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The twenty-one scenarios this script walks by convention, and their 60
-  # properties. `calculation/` and `gotha/` are not among them: each carries its
-  # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the twenty-one fails this line, which is the point of it —
+  # The eighteen scenarios this script walks by convention, and their 55
+  # properties. Adding a property to any of the eighteen fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
   # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
   # 45 -> 49 with agent-guardrails, 49 -> 52 with deployment, 52 -> 56 with
-  # payments, 56 -> 60 with config-space, and this line is where each of those
-  # had to be said out loud.
-  has "cross-check: all 60 properties of the twenty-one scenarios were considered" \
-    "$out" "considered 60 properties: 58 compared, 2 not compared"
-  # Two of the 60 are not compared, and the count above is the only place that
+  # payments, 56 -> 60 with config-space, 60 -> 55 as oversight, workflow
+  # and access left, and this line is where each of those had to be
+  # said out loud.
+  has "cross-check: all 55 properties of the eighteen scenarios were considered" \
+    "$out" "considered 55 properties: 53 compared, 2 not compared"
+  # Two of the 55 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -452,9 +313,9 @@ crosscheck() {
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
   has "cross-check: B. a live is its COUNTEREXAMPLE set — empty holds" \
-    "$out" "workflow/settle-able  live: counterexample set of 0"
+    "$out" "payments/always-terminal  live: counterexample set of 0"
   has "cross-check:    and a failing live names its witnesses" \
-    "$out" "access/revocation-possible  live: counterexample set of 4"
+    "$out" "deployment/can-roll-back  live: counterexample set of 4"
   # `arch` brought the repository's first two `never` properties, so this
   # branch — which announced itself as unexercised on every prior run — is now
   # measured. If it ever reads "unexercised" again, a scenario went missing.
@@ -887,7 +748,7 @@ config_space() {
 
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best two_phase_commit arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

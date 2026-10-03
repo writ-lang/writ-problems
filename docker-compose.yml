@@ -17,6 +17,7 @@ services:
     image: writ-problems
     command: ["river"]
 
+
   # Knights & knaves — the reading that makes the story consistent.
   island:
     build: .
@@ -41,23 +42,8 @@ services:
     image: writ-problems
     command: ["jobshop_best"]
 
-  # Institutional architecture — laws, acknowledgments, and `writ compare` across an amendment.
-  oversight:
-    build: .
-    image: writ-problems
-    command: ["oversight"]
 
-  # A regulated workflow: a declared `gap` where the rules stop.
-  workflow:
-    build: .
-    image: writ-problems
-    command: ["workflow"]
 
-  # Access and privilege, including a one-way latch.
-  access:
-    build: .
-    image: writ-problems
-    command: ["access"]
 
   # Separation of duties: the toxic-combination table, and the role it misses.
   separation-of-duties:

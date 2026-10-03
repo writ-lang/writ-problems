@@ -49,9 +49,6 @@ Many `writ check` runs **exit 1** on purpose: a failing property is a finding
 |---|---|---|
 | [`jobshop-possible/`](jobshop-possible/) | Can three jobs on three blocking machines all finish? | Yes — but three moves can deadlock the shop. |
 | [`jobshop-best/`](jobshop-best/) | What is the shortest schedule? | 5 ticks: `done-by-4` fails, `done-by-5` holds. |
-| [`oversight/`](oversight/) | Can lawful moves permanently stop a case concluding? | Not as written; repeal one power and `writ compare` shows accountability **LOST**. |
-| [`workflow/`](workflow/) | Can a KYC case ever get stuck? | Never — and where automation ends, a declared gap hands it to a human. |
-| [`access/`](access/) | Can an admin grant always be revoked? | No: the break-glass grant is a latch. |
 | [`entitlement-problems/`](entitlement-problems/) | Can a requester approve, a developer edit CloudTrail, a leaver keep admin? | Yes, each through steps that are fine one at a time. writ names who, and through which grants. |
 | [`expense-approval/`](expense-approval/) | Can a large expense be paid without two independent approvals? | Yes, when one person holds both roles: "two signatures" counted boxes, not people. |
 | [`agent-guardrails/`](agent-guardrails/) | Can an AI agent's secret leave the machine with no human saying yes? | Not under v1. Add a "read-only" web-fetch and it can, in three moves, none of them human's. |
@@ -65,13 +62,11 @@ Many `writ check` runs **exit 1** on purpose: a failing property is a finding
 | | The question | writ's answer |
 |---|---|---|
 | [`arch/`](arch/) | Which architectures satisfy a brief, from a bank of components? | 96 of 2,916 — and the one thing the brief forgot to say. |
-| [`calculation/`](calculation/) | Prices or a plan: the same world under two rules. What does each guarantee? | Both can meet need; only prices avoid waste — the plan loses `no-waste`, with the route. |
-| [`gotha/`](gotha/) | Is this falsifiable claim true? | No — a refuting situation, three moves away. |
 | [`timetable/`](timetable/) | Is the week a constraint solver produced any good? | Valid, but two rules fail: sport first thing, and no time to change after it. |
 | [`db-migration-problems/`](db-migration-problems/) | Is this schema migration safe at every instant, mid-rollout included? | The safe plans pass; the shortcuts fail with the breaking step. |
 
 The runner also covers `writ control` and `writ compare --git`. Shared
-vocabularies — scheduling, chess, architecture, economy — live in
+vocabularies — scheduling, chess, architecture — live in
 [`libraries/`](libraries/).
 
 Most scenarios also re-ask their questions through writ's rules engine

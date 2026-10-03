@@ -9,7 +9,6 @@ hold the shared vocabulary for the scenarios beside them.
 | [`scheduling.lib.writ`](scheduling.lib.writ) | `jobshop-possible/`, `jobshop-best/` | machines, jobs, routings, the blocking rule, a clock |
 | [`arch.lib.writ`](arch.lib.writ) | `arch/` | components, stages and their demands, the `fits` test, the design cursor |
 | [`school.lib.writ`](school.lib.writ) | `timetable/` | the week, rooms, capacity, staff, the curriculum as one entity per hour, a booking |
-| [`economy.lib.writ`](economy.lib.writ) | `calculation/` | plants and their needs, one scarce allotment, the allocation rule, the `signal-honest` law |
 
 A model, claims file or rules file loads one by relative path:
 `(load "../libraries/chess.lib.writ")`. A library holds declarations only (a
