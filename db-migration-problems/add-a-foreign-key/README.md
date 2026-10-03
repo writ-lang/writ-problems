@@ -20,15 +20,24 @@ The SQL is [`01-before.sql`](01-before.sql) (order `o2` points at customer
 `c9`, who does not exist), [`02-add-not-valid.sql`](02-add-not-valid.sql) and
 [`03-validate.sql`](03-validate.sql).
 
-`writ sql` reads a foreign key's presence, not its validation state, and the
-two `ALTER` statements show the difference:
+`writ sql` reads a foreign key's presence, not its validation state, and says
+so for both `ALTER` statements:
 
-- `ADD CONSTRAINT … NOT VALID` is read as an ordinary foreign key,
-  `(fk customer-id customers)`. The output is the same with or without
-  `NOT VALID`, and `--strict` accepts it. The orphan row `o2 → c9` in that
-  file loads without complaint.
-- `VALIDATE CONSTRAINT` is declined under `--strict`: "ALTER TABLE that adds
-  no constraint".
+- `ADD CONSTRAINT … NOT VALID`: the key is read, `(fk customer-id customers)`,
+  and the clause is declined, because the model would otherwise claim the key
+  for rows the database never checked, like the orphan `o2 → c9` in that
+  file:
+
+  ```
+  declined:
+    19: NOT VALID — the constraint is read, but rows already present are not checked by it, and writ reads it as holding for every row
+  ```
+
+  It is the one decline that makes a model stricter than the database rather
+  than laxer, which is why `--strict` fails on it. (Earlier versions of writ
+  dropped the clause without a word. This scenario is how that was found.)
+- `VALIDATE CONSTRAINT` is declined too: it "changes whether a constraint has
+  been checked against existing rows, which a schema does not record".
 
 So the model carries the state itself. [`add-a-foreign-key.writ`](add-a-foreign-key.writ)
 has the constraint as `none`, `not-valid` or `validated`; the orders table's

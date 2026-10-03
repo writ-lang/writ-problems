@@ -79,9 +79,14 @@ outage: start the deploy, drop the column, two moves. Both rules break, because
 the old release both reads and writes the column. The shortcut still completes
 and never gets stuck, so only the safety question catches it.
 
-`writ compare` is the wrong gate here: the shortcut still declares both rules,
-so compare reports everything preserved. It breaks a rule rather than dropping
-one, and that is what `check` finds.
+`writ compare drop-a-column.writ drop-a-column-shortcut.writ` agrees. The
+shortcut still declares both rules, but it breaks them, so both are `LOST`
+with the same two moves:
+
+```
+equations:   read-of-existing   LOST      witness: 1. deploy-r2 2. drop-column
+             write-of-existing  LOST      witness: 1. deploy-r2 2. drop-column
+```
 
 ## What to take away
 

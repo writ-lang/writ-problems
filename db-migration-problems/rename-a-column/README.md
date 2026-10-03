@@ -117,21 +117,22 @@ moves reach one, and the last of them, `deploy-r3`, is the step at fault. The
 shortcut still completes, never gets stuck, and its route is eight steps
 instead of nine.
 
-`writ compare` does not catch it, because the shortcut gives up none of the
-guarantees it declares:
+`writ compare` against the safe plan catches it too. The shortcut declares
+the same rules, but one of them it now breaks, and a rule broken that the old
+plan kept is a guarantee lost:
 
 ```console
 $ writ compare rename-a-column.writ rename-a-column-shortcut.writ
 equations:   read-of-existing           preserved
              write-of-existing          preserved
-             read-of-filled             preserved
+             read-of-filled             LOST      witness: 1. add-column 2. deploy-r2 3. settle 4. deploy-r3
              read-implies-every-writer  preserved
 properties:  completes                  preserved
              no-dead-ends               preserved
 ```
 
-`compare` asks which guarantees a version dropped; `check` asks whether it
-keeps the ones it declares. Gate CI on `check`.
+`check` says the shortcut breaks a rule; `compare` says which guarantee the
+change from the safe plan gave up. Either is a gate for CI.
 
 ## What to take away
 
