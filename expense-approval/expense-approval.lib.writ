@@ -1,0 +1,12 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; Two approvals, by two different people. Never bare `differ`: it is true when
+; either slot is empty, so "two different signatures" needs both defined.
+(form (two-independent E)
+  (and (defined E.manager-sign)
+       (defined E.finance-sign)
+       (differ E.manager-sign E.finance-sign)))
+
+(form (settled E) (or (is E.stage paid) (is E.stage cancelled)))

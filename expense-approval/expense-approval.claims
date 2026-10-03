@@ -1,0 +1,34 @@
+; The questions, put to both processes.
+
+(load "expense-approval.lib.writ")
+
+(property payable
+  "a large expense can be paid"
+  (possible (is e1.stage paid)))
+
+(property never-on-one-person
+  "a large expense is never paid on one person's say-so"
+  (never (and (is e1.stage paid) (not (two-independent e1)))))
+
+(property always-settleable
+  "from everywhere, payment or cancellation can still be reached"
+  (live (settled e1)))
+
+(property settles
+  "every run ends paid or cancelled, if paying and cancelling are not ignored forever"
+  (inevitable (settled e1) (fair pay cancel)))
+
+; ---- ownership ----
+; Every step that writes a signature slot or the stage is on a rule's route.
+; The guards are what keep the rules; each step is acknowledged here, and the
+; law that still breaks is the one a guard stopped checking.
+(accept ann-approves-as-manager  no-self-approval finance-after-manager two-for-large)
+(accept bob-approves-as-manager  no-self-approval finance-after-manager two-for-large)
+(accept bob-approves-for-finance no-self-approval finance-after-manager two-for-large)
+(accept cat-approves-for-finance no-self-approval finance-after-manager two-for-large)
+(accept reject                   no-self-approval finance-after-manager two-for-large)
+(accept change-bank-account      no-self-approval finance-after-manager two-for-large)
+(accept submit   two-for-large)
+(accept resubmit two-for-large)
+(accept cancel   two-for-large)
+(accept pay      two-for-large)

@@ -77,6 +77,12 @@ services:
     image: writ-problems
     command: ["joiner_mover_leaver"]
 
+  # Two approvals, one person: the independence check payment forgot.
+  expense-approval:
+    build: .
+    image: writ-problems
+    command: ["expense_approval"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:

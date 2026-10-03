@@ -1,0 +1,50 @@
+; The same questions, answered a second time by a different part of `writ`, so
+; that `modality-cross-check.sh` can compare them. A disagreement is a bug in
+; one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+;   `settles` carries (fair …), which ct.rules does not encode; the
+;   cross-check skips it and says so.
+(load "ct.rules")
+(load "expense-approval.lib.writ")
+
+(satisfies payable (is e1.stage paid))
+
+; `two-independent` compares one path with another (`differ A.x A.y`), which
+; the claims language allows and a rules guard does not: a guard compares a
+; path with a constant or a variable. So independence is said the Datalog way.
+; The same variable in both slots is the same person.
+(relation same-signer (Situation))
+(rule (same-signer S)
+  (situation S)
+  (holds S (is e1.manager-sign P))
+  (holds S (is e1.finance-sign P)))
+
+(relation independent (Situation))
+(rule (independent S)
+  (situation S)
+  (holds S (defined e1.manager-sign))
+  (holds S (defined e1.finance-sign))
+  (not (same-signer S)))
+
+(relation never-on-one-person (Situation))
+(rule (never-on-one-person S)
+  (situation S)
+  (holds S (is e1.stage paid))
+  (not (independent S)))
+
+(satisfies is-settled (settled e1))
+(can-reach can-settle is-settled)
+(trapped always-settleable can-settle)
+
+; ---- the explanation ----
+; Every payment, with who signed it: the situation, the manager's signature,
+; finance's. An auditor reads down the last two columns for a repeated name.
+(relation paid-by (Situation person person))
+(rule (paid-by S A B)
+  (situation S)
+  (holds S (is e1.stage paid))
+  (holds S (is e1.manager-sign A))
+  (holds S (is e1.finance-sign B)))

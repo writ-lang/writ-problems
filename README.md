@@ -53,6 +53,7 @@ Many `writ check` runs **exit 1** on purpose: a failing property is a finding
 | [`workflow/`](workflow/) | Can a KYC case ever get stuck? | Never — and where automation ends, a declared gap hands it to a human. |
 | [`access/`](access/) | Can an admin grant always be revoked? | No: the break-glass grant is a latch. |
 | [`entitlement-problems/`](entitlement-problems/) | Can a requester approve, a developer edit CloudTrail, a leaver keep admin? | Yes, each through steps that are fine one at a time. writ names who, and through which grants. |
+| [`expense-approval/`](expense-approval/) | Can a large expense be paid without two independent approvals? | Yes, when one person holds both roles: "two signatures" counted boxes, not people. |
 | [`two-phase-commit/`](two-phase-commit/) | Do the parties agree, and must they decide? | Always agree; a coordinator crash can strand them. Variants price a timeout and a lossy network. |
 
 **Design, judgement and change**

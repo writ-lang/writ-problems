@@ -431,20 +431,21 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The sixteen scenarios this script walks by convention, and their 41
+  # The seventeen scenarios this script walks by convention, and their 45
   # properties. `calculation/` and `gotha/` are not among them: each carries its
   # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the sixteen fails this line, which is the point of it —
+  # property to any of the seventeen fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
-  # 26 -> 31 with two-phase-commit, and 31 -> 41 with the three
-  # entitlement-problems (3 + 3 + 4), and this line is where each of those had
-  # to be said out loud.
-  has "cross-check: all 41 properties of the sixteen scenarios were considered" \
-    "$out" "considered 41 properties"
-  # One of the 41 is not compared, and the count above is the only place that
-  # would notice if the reason changed: two-phase-commit asks one property under
-  # a fairness assumption, which ct.rules §8 does not encode.
-  has "cross-check:    with the one fair property skipped, and saying why" \
+  # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
+  # entitlement-problems (3 + 3 + 4), and 41 -> 45 with expense-approval, and
+  # this line is where each of those had to be said out loud.
+  has "cross-check: all 45 properties of the seventeen scenarios were considered" \
+    "$out" "considered 45 properties: 43 compared, 2 not compared"
+  # Two of the 45 are not compared, and the count above is the only place that
+  # would notice if the reason changed: two-phase-commit and expense-approval
+  # each ask one property under a fairness assumption, which ct.rules §8 does
+  # not encode.
+  has "cross-check:    with the fair properties skipped, and saying why" \
     "$out" "carries (fair …) — no rules encoding, skipped"
   has "cross-check: A. a possible is its satisfying set — non-empty holds" \
     "$out" "river/solvable  possible: satisfying set of"
@@ -456,14 +457,17 @@ crosscheck() {
   # branch — which announced itself as unexercised on every prior run — is now
   # measured. If it ever reads "unexercised" again, a scenario went missing.
   # two-phase-commit's atomicity is the third; the entitlement problems bring
-  # four more, since "nobody ever holds X" is how an access rule is said.
+  # four more, since "nobody ever holds X" is how an access rule is said, and
+  # expense-approval one.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 7 properties compared"
-  # And `inevitable`, whose two are two-phase-commit's — the newest modality,
-  # and the one whose second implementation is newest, so the line that says it
-  # is being compared at all is worth having.
+    "never: 8 properties compared"
+  # And `inevitable`, two of whose three are two-phase-commit's — the newest
+  # modality, and the one whose second implementation is newest, so the line
+  # that says it is being compared at all is worth having. The third is
+  # expense-approval's `settles`, a fair one: this line counts properties
+  # considered, so it counts that one too, though it is skipped.
   has "cross-check: D. the inevitable branch is exercised too" "$out" \
-    "inevitable: 2"
+    "inevitable: 3"
   has "cross-check:    an inevitable is its ESCAPE set, empty holds" "$out" \
     "two-phase-commit/must-decide  inevitable: counterexample set of 10"
   has "cross-check:    a never is a COUNTEREXAMPLE set, like live" "$out" \
@@ -684,9 +688,41 @@ joiner_mover_leaver() {
   lacks "joiner-mover-leaver:    and none through a group" "$dv" "  group  "
 }
 
+expense_approval() {
+  d="$here/expense-approval"
+  echo "== Expense approval — two signatures, one person =="
+  echo "   Q: can a large expense be paid without two independent approvals?"
+  out=$("$WRIT" check "$d/expense-approval.writ" --claims "$d/expense-approval.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "expense-approval: the process is clean" "$st" 0
+  has "expense-approval: A. a large expense can be paid" "$out" "holds  payable"
+  near "expense-approval:    on the manager's signature and finance's" "$out" "holds  payable" "cat-approves-for-finance"
+  has "expense-approval: B. never on one person's say-so" "$out" "holds  never-on-one-person"
+  has "expense-approval: C. and every run settles, paid or cancelled" "$out" "holds  settles"
+  lacks "expense-approval:    nothing is violated" "$out" "violated in"
+
+  sc=$("$WRIT" check "$d/expense-approval-shortcut.writ" --claims "$d/expense-approval.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "expense-approval: \"both slots filled\" is refused" "$sst" 1
+  has "expense-approval: D. paid on two signatures by one person" "$sc" "violated in 2 reachable situations   witness: 1. submit 2. bob-approves-as-manager 3. bob-approves-for-finance 4. pay"
+  has "expense-approval:    and only that rule breaks" "$sc" "fails  never-on-one-person"
+  has "expense-approval: E. yet it still pays, and still settles" "$sc" "holds  settles"
+
+  cmp=$("$WRIT" compare "$d/expense-approval.writ" "$d/expense-approval-shortcut.writ" 2>&1)
+  has "expense-approval: F. compare reports the guarantee LOST" "$cmp" "never-on-one-person    LOST"
+  # The law that breaks compares as preserved: compare matches laws by
+  # declaration, and both files declare it. The property is what catches it.
+  has "expense-approval:    while the law it breaks compares as preserved" "$cmp" "two-for-large          preserved"
+
+  dv=$("$WRIT" derive "$d/expense-approval-shortcut.writ" "$d/expense-approval.rules" paid-by 2>&1)
+  has "expense-approval: G. derive lists who signed each payment" "$dv" "13  bob  bob"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"
