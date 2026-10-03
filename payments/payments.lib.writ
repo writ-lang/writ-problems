@@ -1,0 +1,17 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; The order has reached an end: settled, refunded or cancelled.
+(form terminal
+  (or (is o.stage settled) (is o.stage refunded) (is o.stage cancelled)))
+
+; The customer has paid for an order they will not get: it was cancelled, and
+; the processor holds a capture nobody refunded.
+(form charged-for-nothing
+  (and (is o.stage cancelled) (not (is proc.captures none)) (is proc.refunded no)))
+
+; Nothing on the wire: no request, reply or void still to land. Until then the
+; charge is unresolved, not wrong.
+(form quiet
+  (and (is net.request no) (is net.reply no) (is net.void no)))

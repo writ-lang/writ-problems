@@ -95,6 +95,12 @@ services:
     image: writ-problems
     command: ["deployment"]
 
+  # Payments: a lost reply, a retry, and the idempotency key.
+  payments:
+    build: .
+    image: writ-problems
+    command: ["payments"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:

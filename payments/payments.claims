@@ -1,0 +1,29 @@
+; The questions, put to both integrations.
+
+(load "payments.lib.writ")
+
+(property settles
+  "a payment can settle"
+  (possible (is o.stage settled)))
+
+(property never-double
+  "the customer is never charged twice"
+  (never (is proc.captures two)))
+
+(property never-charged-for-nothing
+  "once the wire is quiet, a cancelled order never leaves the customer charged"
+  (never (and charged-for-nothing quiet)))
+
+(property always-terminal
+  "from everywhere, the order can still reach an end"
+  (live terminal))
+
+; ---- ownership ----
+(accept capture       one-capture)
+(accept capture-again one-capture)
+(accept authorize     cancelled-never-ships)
+(accept receive-reply cancelled-never-ships)
+(accept settle        cancelled-never-ships)
+(accept ship          cancelled-never-ships)
+(accept refund        cancelled-never-ships)
+(accept cancel        cancelled-never-ships)
