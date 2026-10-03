@@ -33,10 +33,11 @@ What all six share:
   of the six (`add-a-required-column`, 3 moves against 5; `rename-a-column`,
   8 against 9) and the same length in the other four. There it does not skip
   a step: it allows the steps in an order the safe plan forbids.
-- **`writ compare` is the wrong gate.** Both files of each pair declare the
-  same rules and ask the same questions, so compare reports everything
-  preserved. The shortcut breaks a rule rather than dropping one, and that is
-  what `check` finds.
+- **Both gates catch it.** The shortcut breaks a rule rather than dropping
+  one. `check` reports the violation, and `writ compare` against the safe
+  plan reports that rule `LOST` with the same route, since a rule declared in
+  both but broken in one is a guarantee lost. (Before writ counted that, compare
+  read "preserved" here, and these READMEs said to gate on `check`.)
 
 From any of the directories (here, `drop-a-column/`):
 
@@ -52,7 +53,6 @@ carry over unchanged.
 
 What `writ sql` does with the newer steps is recorded where it matters:
 `CHECK … IN` becomes an enumerated type (`change-an-enum/`), `REFERENCES`
-becomes an arrow (`split-a-table/`), and `NOT VALID` is read as an ordinary
-foreign key while `VALIDATE CONSTRAINT` is declined (`add-a-foreign-key/`).
-A constraint's validation state is not part of a schema, so the models carry
-it themselves.
+becomes an arrow (`split-a-table/`), and `NOT VALID` and `VALIDATE CONSTRAINT`
+are both declined, each saying why (`add-a-foreign-key/`). A constraint's
+validation state is not part of a schema, so the models carry it themselves.

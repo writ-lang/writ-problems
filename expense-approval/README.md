@@ -133,18 +133,16 @@ writ compare expense-approval.writ expense-approval-shortcut.writ   # exit 1
 ```
 equations:   no-self-approval       preserved
              finance-after-manager  preserved
-             two-for-large          preserved
+             two-for-large          LOST      witness: 1. submit 2. bob-approves-as-manager 3. bob-approves-for-finance 4. pay
 properties:  payable                preserved
              never-on-one-person    LOST      witness: 1. submit 2. bob-approves-as-manager 3. bob-approves-for-finance 4. pay
              always-settleable      preserved
              settles                preserved
 ```
 
-`two-for-large` reads `preserved` although the shortcut violates it.
-`compare` matches laws by declaration, and both files declare it. The
-property `never-on-one-person` asks the same thing as a question, and that
-is what `compare` reports lost. If `compare` is your gate, ask your safety
-rules as properties too. `check` catches both.
+Both files declare `two-for-large`, and the shortcut breaks it, so `compare`
+reports it lost with the same four steps as the property `never-on-one-person`,
+which asks the same thing as a question. Either gate catches it.
 
 ## A question for whoever owns the process
 

@@ -91,8 +91,8 @@ through the broken situation. `required-needs-data`, the database's own check,
 is untouched; only the unwatched rule breaks. The shortcut is also faster,
 three steps against five, because it skips a deploy and a wait.
 
-`writ compare` would report everything preserved, since the shortcut declares
-the same rules. Gate on `check`.
+`writ compare` against the safe plan agrees: `required-needs-every-writer` is
+`LOST`, with the same three moves. The other two rules are preserved.
 
 ## What to take away
 
