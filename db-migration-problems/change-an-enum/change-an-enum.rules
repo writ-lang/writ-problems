@@ -1,0 +1,14 @@
+; The same two questions, answered a second time by a different part of `writ`,
+; so that `modality-cross-check.sh` can compare them. A disagreement is a bug in
+; one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `live F` is the COUNTEREXAMPLE set — EMPTY means it holds.
+(load "ct.rules")
+(load "change-an-enum.lib.writ")
+
+(satisfies completes done)
+
+(can-reach can-still-finish completes)
+(trapped no-dead-ends can-still-finish)

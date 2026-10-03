@@ -1,0 +1,84 @@
+; Adding a value to an enum — and writing it before every reader knows it.
+;
+; Tickets are open or closed, and the product wants a third state, archived.
+; The schema change is trivial: widen the CHECK. The code change is trivial:
+; r2 knows the new value. The trap is the first WRITE of 'archived' while r1,
+; which maps the column onto a two-value enum, is still serving reads.
+;
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "change-an-enum.lib.writ")
+
+(schema change-an-enum
+
+  (type yn (no yes))
+
+  ; The members as `writ sql` reads them from the final step's CHECK.
+  (type tickets-status (open closed archived))
+
+  ; The CHECK itself: whether the database accepts 'archived' yet.
+  (type check (arrow allows-archived (to yn)))
+
+  (type ticket (arrow status (to tickets-status)))
+
+  ; r1 is deployed today and maps the column onto a two-value enum in code: an
+  ; unknown value is a deserialisation error. r2 knows all three.
+  (type release (arrow knows-archived (to yn) fixed))
+
+  (type fleet
+    (arrow old (to release))
+    (arrow new (to release)))
+
+  ; ---- the rules ----
+
+  ; 1. The database refuses a value its CHECK does not list. It is the loud
+  ; rule: break it and the UPDATE fails at once.
+  (equation check-allows
+    (not (and (is ticket.status archived)
+              (some (c check) (is c.allows-archived no)))))
+
+  ; 2. Every running release can read every row. The quiet rule: the UPDATE
+  ; succeeds, and the failure is the next read by an old instance.
+  (equation readable
+    (not (and (is ticket.status archived)
+              (some (f fleet) (or (is f.old.knows-archived no)
+                                  (is f.new.knows-archived no)))))))
+
+(instance start change-an-enum
+  (check status-check (allows-archived no))
+  (ticket t1 (status closed))
+  (release r1 (knows-archived no))
+  (release r2 (knows-archived yes))
+  (fleet prod (old r1) (new r1)))
+
+(use change-an-enum)
+(initial start)
+
+; ---- the runbook ----
+
+; Widen the CHECK (02-add-value.sql). Safe at any time: nothing writes the
+; value yet.
+(transition add-value
+  (when (is status-check.allows-archived no))
+  (do (set status-check.allows-archived yes)))
+
+; Ship the code that knows the new value.
+(transition deploy-r2
+  (when (and settled (is prod.new r1)))
+  (do (set prod.new r2)))
+
+(transition settle
+  (when rolling)
+  (do (set prod.old prod.new)))
+
+; Archive a closed ticket: the first write of the new value. The feature is
+; switched on only once the fleet has SETTLED on r2. `allows-archived` is the
+; condition the database would enforce anyway; `settled` is the one it cannot.
+(transition archive-t1
+  (when (and (is t1.status closed)
+             (is status-check.allows-archived yes)
+             (is prod.new r2)
+             settled))
+  (do (set t1.status archived)))
+

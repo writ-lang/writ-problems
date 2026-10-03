@@ -1,0 +1,19 @@
+; The questions, put to both plans.
+
+(load "split-a-table.lib.writ")
+
+(property completes
+  "the move can finish: settled on r3, every address copied, the old column gone"
+  (possible done))
+
+(property no-dead-ends
+  "from every reachable situation, that end can still be reached"
+  (live done))
+
+; ---- ownership ----
+(accept deploy-r2       read-of-existing no-lost-writes complete-before-read)
+(accept settle          read-of-existing no-lost-writes complete-before-read)
+(accept deploy-r3       read-of-existing no-lost-writes complete-before-read)
+(accept drop-column     read-of-existing)
+(accept backfill-start  no-lost-writes complete-before-read)
+(accept backfill-finish no-lost-writes complete-before-read)
