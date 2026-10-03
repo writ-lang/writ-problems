@@ -93,9 +93,12 @@ queens() {
   # A complete board is a dead end reached in EIGHT moves — one per column,
   # since the cursor advances exactly once per placement. The other dead ends
   # are stuck prefixes, whose routes are shorter, which is why this counts
-  # route length rather than dead ends.
-  n=$(printf '%s\n' "$out" | grep 'reached by:' \
-      | awk -F'reached by:' '{ if (split($2, a, ",") == 8) c++ } END { print c+0 }')
+  # route length rather than dead ends. Counted from --json: the prose report
+  # lists only the first 20 dead ends.
+  n=$("$WRIT" check "$here/queens/queens.writ" --claims "$here/queens/queens.claims" \
+        --json --no-certificate 2>/dev/null \
+      | grep -o '"state":[0-9]*,"route":\[[^]]*\]' \
+      | awk -F'"move"' 'NF - 1 == 8 { c++ } END { print c+0 }')
   if [ "$n" -eq 92 ]; then
     ok "queens: B. all 92 complete boards are found (each a dead end)"
   else
