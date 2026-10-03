@@ -1,0 +1,7 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+(form complete
+  (and (defined w1.primary) (defined w2.primary) (defined w3.primary)
+       (defined w4.primary) (defined w5.primary) (defined w6.primary)))

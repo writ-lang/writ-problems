@@ -1,0 +1,11 @@
+; The planner's questions, put to both policies.
+
+(load "on-call-rota.lib.writ")
+
+(property rota-exists
+  "six weeks can be covered under the policy"
+  (possible complete))
+
+(property no-dead-end-prefix
+  "from every partial rota, a complete one can still be reached"
+  (live complete))

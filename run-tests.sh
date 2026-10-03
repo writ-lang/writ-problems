@@ -293,18 +293,18 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The eighteen scenarios this script walks by convention, and their 55
-  # properties. Adding a property to any of the eighteen fails this line, which is the point of it —
+  # The nineteen scenarios this script walks by convention, and their 57
+  # properties. Adding a property to any of the nineteen fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
   # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
   # 45 -> 49 with agent-guardrails, 49 -> 52 with deployment, 52 -> 56 with
   # payments, 56 -> 60 with config-space, 60 -> 55 as oversight, workflow
-  # and access left, and this line is where each of those had to be
-  # said out loud.
-  has "cross-check: all 55 properties of the eighteen scenarios were considered" \
-    "$out" "considered 55 properties: 53 compared, 2 not compared"
-  # Two of the 55 are not compared, and the count above is the only place that
+  # and access left, 55 -> 57 with on-call-rota, and this line is where each
+  # of those had to be said out loud.
+  has "cross-check: all 57 properties of the nineteen scenarios were considered" \
+    "$out" "considered 57 properties: 55 compared, 2 not compared"
+  # Two of the 57 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -746,9 +746,43 @@ config_space() {
   lacks "config-space:    and only those" "$dv" "single"
 }
 
+on_call_rota() {
+  d="$here/on-call-rota"
+  c="$d/on-call-rota.claims"
+  echo "== An on-call rota — does one exist, and what did the policy not say? =="
+  echo "   Q: six weeks, four people, the policy as written: is there a rota?"
+  out=$("$WRIT" check "$d/on-call-rota.writ" --claims "$c" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "on-call-rota: the policy reports a finding" "$st" 1
+  has "on-call-rota: A. a rota exists" "$out" "holds  rota-exists"
+  near "on-call-rota:    and the witness IS the rota, week 1 first" "$out" "holds  rota-exists" "1. ann-takes-w1"
+  has "on-call-rota:    through to week 6" "$out" "6. bob-takes-w6"
+  has "on-call-rota: B. ten rotas in all, every one a dead end of six moves" "$out" "dead ends: 10"
+  has "on-call-rota: C. the policy is silent on handing over into leave, twice" "$out" "gaps: 2"
+  has "on-call-rota:    Bob before his week away" "$out" "bob-takes-w2 — \"the policy does not say"
+  has "on-call-rota: D. and one first assignment strands the planner" "$out" "fails  no-dead-end-prefix"
+  near "on-call-rota:    giving Cat week 1" "$out" "fails  no-dead-end-prefix" "1. cat-takes-w1"
+
+  sc=$("$WRIT" check "$d/on-call-rota-strict.writ" --claims "$c" 2>&1)
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  has "on-call-rota: E. one more rule, and no rota exists" "$sc" "fails  rota-exists"
+  # How far it gets: three weeks. Week 4 has nobody left, which is the
+  # argument the README spells out, ending at the gap.
+  has "on-call-rota:    every attempt stops after week 3" "$sc" "reached by: ann-takes-w1, cat-takes-w2, ann-takes-w3"
+  has "on-call-rota:    unless the gap is answered" "$sc" "cat-takes-w3 — \"the policy does not say"
+
+  cmp=$("$WRIT" compare "$d/on-call-rota.writ" "$d/on-call-rota-strict.writ" 2>&1)
+  has "on-call-rota: F. compare: the rota is LOST, with no witness to give" "$cmp" "rota-exists  LOST"
+
+  dv=$("$WRIT" derive "$d/on-call-rota.writ" "$d/on-call-rota.rules" rota 2>&1)
+  has "on-call-rota: G. derive reads every rota out as rows" "$dv" "rota  (60 rows)"
+  has "on-call-rota:    one row per week" "$dv" "17  w6  bob"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best two_phase_commit arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best two_phase_commit arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space on_call_rota control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"
