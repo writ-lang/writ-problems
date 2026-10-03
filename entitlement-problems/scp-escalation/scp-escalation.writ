@@ -1,0 +1,89 @@
+; An AWS organization, before a reorganisation.
+;
+; Production sits in the `production` OU, whose service control policy denies
+; CloudTrail changes. The roles inside the production account are broad,
+; because the SCP is the guardrail: an engineer signed in as `power` has
+; PowerUserAccess, and the SCP takes CloudTrail back out of it.
+;
+; A new `workloads` OU exists, created for a reorganisation, but nothing has
+; been moved into it yet. `scp-escalation-restructured.writ` is this file plus
+; the one administrative step that moves production there.
+;
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "scp-escalation.lib.writ")
+
+(schema scp-escalation
+
+  (type yn (no yes))
+
+  ; An organizational unit, reduced to its service control policy: for each of
+  ; the three actions the questions are about, does the SCP deny it? An SCP
+  ; never grants anything. It only takes away.
+  (type ou
+    (arrow deny-prod-write      (to yn) fixed)
+    (arrow deny-cloudtrail-edit (to yn) fixed)
+    (arrow deny-audit-read      (to yn) fixed))
+
+  ; Which OU an account sits in is the one thing an administrator changes here.
+  (type account (arrow ou (to ou)))
+
+  ; An IAM role lives in one account and grants a fixed set of actions. Whether
+  ; a grant is effective depends on the account's OU, which is not the role's
+  ; business, and that is the gap the questions probe.
+  (type role
+    (arrow in              (to account) fixed)
+    (arrow prod-write      (to yn) fixed)
+    (arrow cloudtrail-edit (to yn) fixed)
+    (arrow audit-read      (to yn) fixed))
+
+  ; A person, and the role they are currently signed in as, if any.
+  (type principal (maybe assumed role)))
+
+(instance start scp-escalation
+
+  ; The guardrails. Production's SCP denies CloudTrail changes, so no role in
+  ; a production account can switch off the audit trail, however broad its
+  ; IAM policy. The security OU's denies production writes.
+  (ou security   (deny-prod-write yes) (deny-cloudtrail-edit no)  (deny-audit-read no))
+  (ou production (deny-prod-write no)  (deny-cloudtrail-edit yes) (deny-audit-read no))
+  ; Created for the reorganisation, with its SCPs copied from the sandbox
+  ; template: no CloudTrail guardrail (sandboxes are disposable) and no access
+  ; from outside the unit (sandboxes are isolated), which is where the security
+  ; team's cross-account read comes from.
+  (ou workloads  (deny-prod-write no)  (deny-cloudtrail-edit no)  (deny-audit-read yes))
+
+  (account prod-acct (ou production))
+  (account sec-acct  (ou security))
+
+  ; Deploys to production.
+  (role deploy       (in prod-acct) (prod-write yes) (cloudtrail-edit no)  (audit-read no))
+  ; The broad role engineers use to debug production. Its IAM policy is
+  ; PowerUserAccess, which includes CloudTrail. Nobody narrowed it, because
+  ; the production OU's SCP already denies CloudTrail changes.
+  (role power        (in prod-acct) (prod-write yes) (cloudtrail-edit yes) (audit-read no))
+  ; How the security team reads production's audit trail: a role inside the
+  ; production account that their own account is trusted to assume.
+  (role audit-reader (in prod-acct) (prod-write no)  (cloudtrail-edit no)  (audit-read yes))
+
+  (principal dev (assumed vacant))
+  (principal sec (assumed vacant)))
+
+(use scp-escalation)
+(initial start)
+
+; ---- signing in and out ----
+
+; One move per trust relationship, written out: who may assume which role is
+; wiring, and wiring is listed rather than computed.
+(form (assume N P R)
+  (transition N (when (not (defined P.assumed))) (do (set P.assumed R))))
+(form (sign-out N P)
+  (transition N (when (defined P.assumed)) (do (vacate P.assumed))))
+
+(assume dev-assumes-deploy      dev deploy)
+(assume dev-assumes-power       dev power)
+(assume sec-assumes-audit-reader sec audit-reader)
+(sign-out dev-signs-out dev)
+(sign-out sec-signs-out sec)

@@ -1,0 +1,36 @@
+; The questions, put to both plans.
+
+(load "joiner-mover-leaver.lib.writ")
+
+(property ada-gets-access
+  "the request can end with Ada holding production access"
+  (possible (and (is prod-engineers.holder ada) (is prod-admin.holder ada))))
+
+(property movers-lose-prod
+  "nobody off the platform team ever holds production access"
+  (never (some (e entitlement) (held-outside-platform e)))
+  (show stranded))
+
+(property leavers-lose-everything
+  "nobody who has left ever holds production access"
+  (never (some (e entitlement) (held-by-leaver e)))
+  (show stranded))
+
+(property leavers-can-be-cut-off
+  "from every reachable situation, a leaver can still end up holding nothing"
+  (live (or (is ada.status active)
+            (and (not (defined prod-engineers.holder))
+                 (not (defined prod-admin.holder))))))
+
+; ---- what is left behind ----
+(query stranded
+  (where (e entitlement))
+  (or (held-outside-platform e) (held-by-leaver e)))
+
+; ---- ownership ----
+; The request's own steps are what can break its rules; their guards are what
+; keep them. Each is acknowledged, and neither rule is violated in either plan.
+(accept ada-requests-prod provisioned-means-approved)
+(accept ada-approves      provisioned-means-approved no-self-approval)
+(accept bob-approves      provisioned-means-approved no-self-approval)
+(accept provision-ada     provisioned-means-approved)

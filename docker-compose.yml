@@ -59,6 +59,24 @@ services:
     image: writ-problems
     command: ["access"]
 
+  # Separation of duties: the toxic-combination table, and the role it misses.
+  separation-of-duties:
+    build: .
+    image: writ-problems
+    command: ["separation_of_duties"]
+
+  # An OU move that leaves the guardrails behind — `writ compare` reports LOST.
+  scp-escalation:
+    build: .
+    image: writ-problems
+    command: ["scp_escalation"]
+
+  # Group-based offboarding, and the direct grant that survives it.
+  joiner-mover-leaver:
+    build: .
+    image: writ-problems
+    command: ["joiner_mover_leaver"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:

@@ -1,0 +1,31 @@
+; The same three questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "separation-of-duties.lib.writ")
+
+(satisfies staffable
+  (some (a account) (or (is a.g1.role.can-approve yes) (is a.g2.role.can-approve yes))))
+
+(satisfies no-conflict (some (a account) (conflicted a)))
+
+(satisfies everyone-out (all (a account) (and (not (defined a.g1)) (not (defined a.g2)))))
+(can-reach can-empty everyone-out)
+(trapped revocable can-empty)
+
+; ---- the explanation ----
+; The question the law cannot answer, because its subject is one account at a
+; time: WHO holds both halves, and through WHICH two groups. Here variables
+; join, so the answer is a table: situation, account, the group that lets them
+; raise a payment, the group that lets them approve it.
+(relation conflict (Situation account group group))
+(rule (conflict S A G H)
+  (situation S) (holds S (is A.g1 G)) (holds S (is A.g2 H))
+  (is G.role.can-request yes) (is H.role.can-approve yes))
+(rule (conflict S A G H)
+  (situation S) (holds S (is A.g2 G)) (holds S (is A.g1 H))
+  (is G.role.can-request yes) (is H.role.can-approve yes))

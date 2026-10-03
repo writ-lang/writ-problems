@@ -431,16 +431,17 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The thirteen scenarios this script walks by convention, and their 31
+  # The sixteen scenarios this script walks by convention, and their 41
   # properties. `calculation/` and `gotha/` are not among them: each carries its
   # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the thirteen fails this line, which is the point of it —
-  # the count went 20 -> 22 -> 26 as the three db-migration-problems joined, and
-  # 26 -> 31 with two-phase-commit, and this line is where each of those had to
-  # be said out loud.
-  has "cross-check: all 31 properties of the thirteen scenarios were considered" \
-    "$out" "considered 31 properties"
-  # One of the 31 is not compared, and the count above is the only place that
+  # property to any of the sixteen fails this line, which is the point of it —
+  # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
+  # 26 -> 31 with two-phase-commit, and 31 -> 41 with the three
+  # entitlement-problems (3 + 3 + 4), and this line is where each of those had
+  # to be said out loud.
+  has "cross-check: all 41 properties of the sixteen scenarios were considered" \
+    "$out" "considered 41 properties"
+  # One of the 41 is not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit asks one property under
   # a fairness assumption, which ct.rules §8 does not encode.
   has "cross-check:    with the one fair property skipped, and saying why" \
@@ -454,9 +455,10 @@ crosscheck() {
   # `arch` brought the repository's first two `never` properties, so this
   # branch — which announced itself as unexercised on every prior run — is now
   # measured. If it ever reads "unexercised" again, a scenario went missing.
-  # two-phase-commit's atomicity is the third.
+  # two-phase-commit's atomicity is the third; the entitlement problems bring
+  # four more, since "nobody ever holds X" is how an access rule is said.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 3 properties compared"
+    "never: 7 properties compared"
   # And `inevitable`, whose two are two-phase-commit's — the newest modality,
   # and the one whose second implementation is newest, so the line that says it
   # is being compared at all is worth having.
@@ -598,9 +600,93 @@ add_a_required_column() {
   fi
 }
 
+separation_of_duties() {
+  d="$here/entitlement-problems/separation-of-duties"
+  echo "== Separation of duties — a conflict that arrives through a role =="
+  echo "   Q: the toxic-combination table is checked on every grant. Is that enough?"
+  out=$("$WRIT" check "$d/separation-of-duties.writ" --claims "$d/separation-of-duties.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "separation-of-duties: checking capabilities, the plan is clean" "$st" 0
+  has "separation-of-duties: A. an approver can still be appointed" "$out" "holds  staffable"
+  has "separation-of-duties: B. nobody holds both halves of a payment" "$out" "holds  no-conflict"
+  has "separation-of-duties:    and everyone can still be taken out of every group" "$out" "holds  revocable"
+  lacks "separation-of-duties:    nothing is violated" "$out" "violated in"
+
+  sc=$("$WRIT" check "$d/separation-of-duties-shortcut.writ" --claims "$d/separation-of-duties.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "separation-of-duties: checking the table alone is refused" "$sst" 1
+  has "separation-of-duties: C. two grants the table never listed" "$sc" "violated in 52 reachable situations"
+  near "separation-of-duties:    the first is innocent" "$sc" "fails  no-conflict" "1. alice-joins-requesters"
+  near "separation-of-duties:    the second is a group nobody put in the table" "$sc" "fails  no-conflict" "2. alice-also-joins-finance-leads"
+  near "separation-of-duties:    and the verdict names who" "$sc" "fails  no-conflict" "a = alice"
+  # Which two groups is a join, which a query cannot do and the rules engine
+  # can: every row it prints is the same pair, and that pair is the finding.
+  dv=$("$WRIT" derive "$d/separation-of-duties-shortcut.writ" "$d/separation-of-duties.rules" conflict 2>&1)
+  has "separation-of-duties: D. derive names the account and both groups" "$dv" "14  alice  requesters  finance-leads"
+  lacks "separation-of-duties:    and the pair the table lists never appears" "$dv" "requesters  approvers"
+}
+
+scp_escalation() {
+  d="$here/entitlement-problems/scp-escalation"
+  echo "== An OU move — the guardrails stay behind =="
+  echo "   Q: moving an account between OUs changes no role. What does it change?"
+  out=$("$WRIT" check "$d/scp-escalation.writ" --claims "$d/scp-escalation.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "scp-escalation: the organization as approved is clean" "$st" 0
+  has "scp-escalation: A. developers cannot modify CloudTrail" "$out" "holds  dev-never-edits-cloudtrail"
+  has "scp-escalation: B. the security team can always reach the audit trail" "$out" "holds  sec-can-always-audit"
+
+  cmp=$("$WRIT" compare "$d/scp-escalation.writ" "$d/scp-escalation-restructured.writ" 2>&1)
+  cst=$?
+  printf '%s\n' "$cmp" | sed 's/^/     | /'
+  exit_is "scp-escalation: compare refuses the reorganisation" "$cst" 1
+  has "scp-escalation: C. deploying still works" "$cmp" "dev-can-deploy              preserved"
+  has "scp-escalation: D. the CloudTrail guardrail is LOST" "$cmp" "dev-never-edits-cloudtrail  LOST      witness: 1. dev-assumes-power 2. move-prod-to-workloads"
+  has "scp-escalation: E. and the security team is locked out, by the move alone" "$cmp" "sec-can-always-audit        LOST      witness: 1. move-prod-to-workloads"
+
+  dv=$("$WRIT" derive "$d/scp-escalation-restructured.writ" "$d/scp-escalation.rules" escalation 2>&1)
+  has "scp-escalation: F. derive prints the privilege path" "$dv" "dev  power  prod-acct  workloads"
+}
+
+joiner_mover_leaver() {
+  d="$here/entitlement-problems/joiner-mover-leaver"
+  echo "== Joiner, mover, leaver — the grant that offboarding cannot see =="
+  echo "   Q: offboarding removes people from their groups. Is that everything?"
+  out=$("$WRIT" check "$d/joiner-mover-leaver.writ" --claims "$d/joiner-mover-leaver.claims" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "joiner-mover-leaver: removing everything by name, the plan is clean" "$st" 0
+  has "joiner-mover-leaver: A. Ada can be given production access" "$out" "holds  ada-gets-access"
+  has "joiner-mover-leaver: B. a mover loses it" "$out" "holds  movers-lose-prod"
+  has "joiner-mover-leaver: C. a leaver loses it" "$out" "holds  leavers-lose-everything"
+  has "joiner-mover-leaver:    and can always be cut off" "$out" "holds  leavers-can-be-cut-off"
+
+  sc=$("$WRIT" check "$d/joiner-mover-leaver-shortcut.writ" --claims "$d/joiner-mover-leaver.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "joiner-mover-leaver: group-only offboarding is refused" "$sst" 1
+  has "joiner-mover-leaver: D. a leaver keeps production access" "$sc" "fails  leavers-lose-everything"
+  near "joiner-mover-leaver:    after an ordinary four-step history" "$sc" "fails  leavers-lose-everything" "4. ada-leaves"
+  # The query answer sits below the four-move witness, past `near`'s six lines,
+  # so it is anchored on the situation the verdict singled out.
+  near "joiner-mover-leaver:    and the verdict names what was left behind" "$sc" "stranded  (at state 13)" "e = prod-admin"
+  has "joiner-mover-leaver: E. so does a mover" "$sc" "fails  movers-lose-prod"
+  # Not a delay but a trap: nothing that runs later removes a direct grant.
+  has "joiner-mover-leaver: F. and nothing left can cut the leaver off" "$sc" "fails  leavers-can-be-cut-off"
+  near "joiner-mover-leaver:    stuck holding the direct assignment" "$sc" "fails  leavers-can-be-cut-off" "prod-admin.holder=ada"
+  has "joiner-mover-leaver:    while the group grant was removed" "$sc" "prod-engineers.holder: ada → ∅"
+
+  dv=$("$WRIT" derive "$d/joiner-mover-leaver-shortcut.writ" "$d/joiner-mover-leaver.rules" left-behind 2>&1)
+  has "joiner-mover-leaver: G. every entitlement left behind was granted directly" "$dv" "prod-admin  direct  ada"
+  lacks "joiner-mover-leaver:    and none through a group" "$dv" "  group  "
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

@@ -1,0 +1,100 @@
+; Separation of duties — and a conflict that arrives through a role.
+;
+; The rule is old and everyone knows it: the person who raises a payment must
+; not be the person who approves it. The usual control is a table of toxic
+; combinations: these two groups may never be held together. Access requests
+; are checked against the table before anyone is added to a group.
+;
+; The table is written in GROUP names. The rule is about CAPABILITIES, which a
+; person gets from a group's role. The two agree only as long as every group
+; that carries both capabilities is in the table, and nothing checks that.
+;
+; This plan checks both: the table, and what the group would actually add.
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "separation-of-duties.lib.writ")
+
+(schema separation-of-duties
+
+  (type yn (no yes))
+
+  ; A role is a bundle of capabilities, fixed when it was designed.
+  (type role
+    (arrow can-request (to yn) fixed)
+    (arrow can-approve (to yn) fixed))
+
+  ; A group grants exactly one role. Access is given by adding people to groups,
+  ; so a person's capabilities are never written down anywhere: they are
+  ; whatever their groups' roles add up to.
+  (type group (arrow role (to role) fixed))
+
+  ; Two group slots per account. What changes is who is in which group.
+  (type account
+    (maybe g1 group)
+    (maybe g2 group))
+
+  ; ---- the rule ----
+
+  ; Separation of duties: nobody can both raise a payment and approve it.
+  ; A law, not a guard: writ reports it if any reachable situation breaks it,
+  ; whatever the moves allowed.
+  (equation separation (not (conflicted account))))
+
+(instance start separation-of-duties
+
+  (role requester (can-request yes) (can-approve no))
+  (role approver  (can-request no)  (can-approve yes))
+  ; Team leads in accounts payable sign off invoices. It is an approver by
+  ; another name, created by the finance team for its own leads, after the
+  ; toxic-combination table was written.
+  (role ap-lead   (can-request no)  (can-approve yes))
+
+  (group requesters    (role requester))
+  (group approvers     (role approver))
+  (group finance-leads (role ap-lead))
+
+  (account alice (g1 vacant) (g2 vacant))
+  (account bob   (g1 vacant) (g2 vacant)))
+
+(use separation-of-duties)
+(initial start)
+
+; ---- granting and removing access ----
+
+; The first group goes in slot g1, a second in g2.
+; The grant is refused if the toxic-combination table lists the pair, or if
+; the group's role would give the account, together with its other slot, both
+; halves of a payment. The second check reads through the group to the role.
+(form (join1 N A G)
+  (transition N
+    (when (and (not (defined A.g1))
+               (not (listed-pair G A.g2))
+               (not (grant-conflicts G A.g2))))
+    (do (set A.g1 G))))
+(form (join2 N A G)
+  (transition N
+    (when (and (not (defined A.g2))
+               (not (listed-pair G A.g1))
+               (not (grant-conflicts G A.g1))))
+    (do (set A.g2 G))))
+
+(form (leave1 N A) (transition N (when (defined A.g1)) (do (vacate A.g1))))
+(form (leave2 N A) (transition N (when (defined A.g2)) (do (vacate A.g2))))
+
+(join1 alice-joins-requesters         alice requesters)
+(join1 alice-joins-approvers          alice approvers)
+(join1 alice-joins-finance-leads      alice finance-leads)
+(join2 alice-also-joins-requesters    alice requesters)
+(join2 alice-also-joins-approvers     alice approvers)
+(join2 alice-also-joins-finance-leads alice finance-leads)
+(join1 bob-joins-requesters           bob requesters)
+(join1 bob-joins-approvers            bob approvers)
+(join1 bob-joins-finance-leads        bob finance-leads)
+(join2 bob-also-joins-requesters      bob requesters)
+(join2 bob-also-joins-approvers       bob approvers)
+(join2 bob-also-joins-finance-leads   bob finance-leads)
+(leave1 alice-leaves-first-group  alice)
+(leave2 alice-leaves-second-group alice)
+(leave1 bob-leaves-first-group    bob)
+(leave2 bob-leaves-second-group   bob)
