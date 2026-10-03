@@ -1,0 +1,88 @@
+; Adding a foreign key to a table that has drifted.
+;
+; orders.customer_id should point at a customer, and today nothing enforces it,
+; so some orders are orphans. The textbook plan: deploy code that stops making
+; orphans, clean up the old ones, add the constraint NOT VALID (no table scan,
+; no long lock), then VALIDATE it. NOT VALID spares the rows already there. It
+; does not spare the code still running.
+;
+; `writ check` exits 0 on this file.
+
+(load "stdlib.writ")
+(load "add-a-foreign-key.lib.writ")
+
+(schema add-a-foreign-key
+
+  (type yn (no yes))
+
+  ; The constraint's life: absent, enforced on new writes only (NOT VALID),
+  ; or validated. `writ sql` reads the schema, which has a foreign key or not;
+  ; this is the part of the database's state it does not carry.
+  (type fk-state (none not-valid validated))
+  (type constraint (arrow state (to fk-state)))
+
+  ; Whether any order points at a customer that does not exist.
+  (type amount (none some))
+  (type table (arrow orphans (to amount)))
+
+  ; r1 is today's code: deleting a customer leaves their orders behind. r2
+  ; re-points them first.
+  (type release (arrow makes-orphans (to yn) fixed))
+
+  (type fleet
+    (arrow old (to release))
+    (arrow new (to release)))
+
+  ; ---- the rules ----
+
+  ; 1. A validated constraint means no orphans. The database's own check:
+  ; VALIDATE CONSTRAINT fails outright while one exists.
+  (equation validated-means-no-orphans
+    (not (and (is constraint.state validated)
+              (some (t table) (is t.orphans some)))))
+
+  ; 2. Once the constraint is enforced at all, no running release makes
+  ; orphans: the database now refuses what that code does, and it fails in
+  ; production. The required-needs-every-writer shape of
+  ; ../add-a-required-column, in a third costume.
+  (equation enforced-means-every-writer-complies
+    (not (and (not (is constraint.state none))
+              (some (f fleet) (or (is f.old.makes-orphans yes)
+                                  (is f.new.makes-orphans yes)))))))
+
+(instance start add-a-foreign-key
+  (constraint customer-fk (state none))
+  (table orders-table (orphans some))     ; o2, in 01-before.sql
+  (release r1 (makes-orphans yes))
+  (release r2 (makes-orphans no))
+  (fleet prod (old r1) (new r1)))
+
+(use add-a-foreign-key)
+(initial start)
+
+; ---- the runbook ----
+
+(transition deploy-r2
+  (when (and settled (is prod.new r1)))
+  (do (set prod.new r2)))
+
+(transition settle
+  (when rolling)
+  (do (set prod.old prod.new)))
+
+; Delete or re-point the orphans. Only once nothing makes new ones.
+(transition clean-orphans
+  (when (and (is orders-table.orphans some) settled (is prod.new r2)))
+  (do (set orders-table.orphans none)))
+
+; 02-add-not-valid.sql. Once the fleet has SETTLED on the code that complies:
+; NOT VALID spares the old rows, not the running code.
+(transition add-not-valid
+  (when (and (is customer-fk.state none) settled (is prod.new r2)))
+  (do (set customer-fk.state not-valid)))
+
+; 03-validate.sql. The database refuses it while an orphan is left.
+(transition validate
+  (when (and (is customer-fk.state not-valid) (is orders-table.orphans none)))
+  (do (set customer-fk.state validated)))
+

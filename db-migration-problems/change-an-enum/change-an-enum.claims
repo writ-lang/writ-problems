@@ -1,0 +1,17 @@
+; The questions, put to both plans.
+
+(load "change-an-enum.lib.writ")
+
+(property completes
+  "a ticket can end up archived, with the fleet settled on the release that knows the value"
+  (possible done))
+
+(property no-dead-ends
+  "from every reachable situation, that end can still be reached"
+  (live done))
+
+; ---- ownership ----
+(accept add-value  check-allows)
+(accept archive-t1 check-allows readable)
+(accept deploy-r2  readable)
+(accept settle     readable)
