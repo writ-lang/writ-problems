@@ -34,11 +34,10 @@ What the three have in common:
 
 `writ compare` reports the difference between the two models of each pair as
 guarantees `LOST`, exit 1. In `scp-escalation/` that is the natural gate,
-because the change *is* the difference: one administrative step added. One
-caution: an equation that both files declare compares as `preserved` even when
-one of them violates it (`separation` in `separation-of-duties/`), because
-`compare` matches laws by declaration. Ask the safety question as a property
-if `compare` is your gate.
+because the change *is* the difference: one administrative step added. A law
+both files declare and one of them breaks (`separation` in
+`separation-of-duties/`) is reported `LOST` too, with the route to the
+violation, so `compare` and `check` agree on every pair.
 
 From any of the directories (here, `separation-of-duties/`):
 

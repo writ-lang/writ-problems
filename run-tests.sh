@@ -281,7 +281,9 @@ gitcompare() {
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "git-compare: the amendment loses a guarantee" "$st" 1
   has "git-compare: never-double is LOST across the two commits" "$out" "never-double               LOST"
-  has "git-compare: one-capture is preserved" "$out" "one-capture                preserved"
+  # The law the amendment breaks, too: declared in both commits, violated in
+  # the second, so LOST with the same route.
+  has "git-compare: one-capture is LOST as well" "$out" "one-capture                LOST"
   rm -rf "$tmp"
 }
 
@@ -293,18 +295,19 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The eighteen scenarios this script walks by convention, and their 55
-  # properties. Adding a property to any of the eighteen fails this line, which is the point of it —
+  # The twenty-two scenarios this script walks by convention, and their 63
+  # properties. Adding a property to any of the twenty-two fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
   # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
   # 45 -> 49 with agent-guardrails, 49 -> 52 with deployment, 52 -> 56 with
   # payments, 56 -> 60 with config-space, 60 -> 55 as oversight, workflow
-  # and access left, and this line is where each of those had to be
-  # said out loud.
-  has "cross-check: all 55 properties of the eighteen scenarios were considered" \
-    "$out" "considered 55 properties: 53 compared, 2 not compared"
-  # Two of the 55 are not compared, and the count above is the only place that
+  # and access left, 55 -> 57 with on-call-rota, 57 -> 63 with the second
+  # batch of db-migration-problems (2 + 2 + 2), and this line is where each of
+  # those had to be said out loud.
+  has "cross-check: all 63 properties of the twenty-two scenarios were considered" \
+    "$out" "considered 63 properties: 61 compared, 2 not compared"
+  # Two of the 63 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -397,16 +400,18 @@ rename_a_column() {
   has "rename-a-column: D. yet it still finishes — faster, which is the trap" "$sc" "holds  completes"
   has "rename-a-column:    and it never strands you either" "$sc" "holds  no-dead-ends"
 
-  echo "   4/4: the verb that does NOT catch it"
+  echo "   4/4: compare, against the safe plan"
   cm=$("$WRIT" compare "$here/db-migration-problems/rename-a-column/rename-a-column.writ" "$here/db-migration-problems/rename-a-column/rename-a-column-shortcut.writ" 2>&1)
   cst=$?
   printf '%s\n' "$cm" | sed 's/^/     | /'
-  exit_is "rename-a-column: compare is content" "$cst" 0
-  has "rename-a-column: E. compare says the guarantees survived" "$cm" "preserved"
-  lacks "rename-a-column:    nothing is reported LOST" "$cm" "LOST"
-  echo "      — the shortcut declares the same laws and keeps the same"
-  echo "        properties; what it loses is that one law it declares is now"
-  echo "        VIOLATED. So the gate is \`check\`, not \`compare\`."
+  # The shortcut declares the same laws; what it loses is that one of them is
+  # now VIOLATED, and compare reports that as a guarantee lost, with the route
+  # check gives. (Before writ counted a newly violated law, this read
+  # "preserved" and the gate had to be check.)
+  exit_is "rename-a-column: compare refuses the shortcut too" "$cst" 1
+  has "rename-a-column: E. the law it now breaks is LOST, with the route" "$cm" \
+    "read-of-filled             LOST      witness: 1. add-column 2. deploy-r2 3. settle 4. deploy-r3"
+  has "rename-a-column:    while the others survive" "$cm" "read-of-existing           preserved"
 }
 
 drop_a_column() {
@@ -576,9 +581,8 @@ expense_approval() {
 
   cmp=$("$WRIT" compare "$d/expense-approval.writ" "$d/expense-approval-shortcut.writ" 2>&1)
   has "expense-approval: F. compare reports the guarantee LOST" "$cmp" "never-on-one-person    LOST"
-  # The law that breaks compares as preserved: compare matches laws by
-  # declaration, and both files declare it. The property is what catches it.
-  has "expense-approval:    while the law it breaks compares as preserved" "$cmp" "two-for-large          preserved"
+  # And the law it breaks: declared in both, violated in the shortcut, LOST.
+  has "expense-approval:    and so is the law it breaks" "$cmp" "two-for-large          LOST"
 
   dv=$("$WRIT" derive "$d/expense-approval-shortcut.writ" "$d/expense-approval.rules" paid-by 2>&1)
   has "expense-approval: G. derive lists who signed each payment" "$dv" "13  bob  bob"
@@ -627,11 +631,10 @@ agent_guardrails() {
 
   ch=$("$WRIT" check "$d/attempt-forget-out.writ" --claims "$c" 2>&1)
   chst=$?
-  # The cheat: delete what the question reads. `check` answers n/a and EXITS 0
-  # — asserted as it is, since a harness that gates on this exit code is the
-  # failure the README warns about.
+  # The cheat: delete what the question reads. `check` answers n/a — and an
+  # unanswered question is a finding, so it exits 1 rather than reading clean.
   has "agent-guardrails: F. deleting the record makes the question n/a" "$ch" "n/a  no-unapproved-exfiltration"
-  exit_is "agent-guardrails:    and check alone exits clean" "$chst" 0
+  exit_is "agent-guardrails:    and check refuses it" "$chst" 1
   cc=$("$WRIT" compare "$d/agent-guardrails.writ" "$d/attempt-forget-out.writ" 2>&1)
   ccst=$?
   exit_is "agent-guardrails: G. compare against v1 refuses it" "$ccst" 1
@@ -746,9 +749,132 @@ config_space() {
   lacks "config-space:    and only those" "$dv" "single"
 }
 
+on_call_rota() {
+  d="$here/on-call-rota"
+  c="$d/on-call-rota.claims"
+  echo "== An on-call rota — does one exist, and what did the policy not say? =="
+  echo "   Q: six weeks, four people, the policy as written: is there a rota?"
+  out=$("$WRIT" check "$d/on-call-rota.writ" --claims "$c" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "on-call-rota: the policy reports a finding" "$st" 1
+  has "on-call-rota: A. a rota exists" "$out" "holds  rota-exists"
+  near "on-call-rota:    and the witness IS the rota, week 1 first" "$out" "holds  rota-exists" "1. ann-takes-w1"
+  has "on-call-rota:    through to week 6" "$out" "6. bob-takes-w6"
+  has "on-call-rota: B. ten rotas in all, every one a dead end of six moves" "$out" "dead ends: 10"
+  has "on-call-rota: C. the policy is silent on handing over into leave, twice" "$out" "gaps: 2"
+  has "on-call-rota:    Bob before his week away" "$out" "bob-takes-w2 — \"the policy does not say"
+  has "on-call-rota: D. and one first assignment strands the planner" "$out" "fails  no-dead-end-prefix"
+  near "on-call-rota:    giving Cat week 1" "$out" "fails  no-dead-end-prefix" "1. cat-takes-w1"
+
+  sc=$("$WRIT" check "$d/on-call-rota-strict.writ" --claims "$c" 2>&1)
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  has "on-call-rota: E. one more rule, and no rota exists" "$sc" "fails  rota-exists"
+  # How far it gets: three weeks. Week 4 has nobody left, which is the
+  # argument the README spells out, ending at the gap.
+  has "on-call-rota:    every attempt stops after week 3" "$sc" "reached by: ann-takes-w1, cat-takes-w2, ann-takes-w3"
+  has "on-call-rota:    unless the gap is answered" "$sc" "cat-takes-w3 — \"the policy does not say"
+
+  cmp=$("$WRIT" compare "$d/on-call-rota.writ" "$d/on-call-rota-strict.writ" 2>&1)
+  has "on-call-rota: F. compare: the rota is LOST, with no witness to give" "$cmp" "rota-exists  LOST"
+
+  dv=$("$WRIT" derive "$d/on-call-rota.writ" "$d/on-call-rota.rules" rota 2>&1)
+  has "on-call-rota: G. derive reads every rota out as rows" "$dv" "rota  (60 rows)"
+  has "on-call-rota:    one row per week" "$dv" "17  w6  bob"
+}
+
+change_an_enum() {
+  d="$here/db-migration-problems/change-an-enum"
+  echo "== Adding a value to an enum — and writing it before every reader knows it =="
+  echo "   Q: widening a CHECK is instant. When is the migration, really?"
+  has "change-an-enum: writ sql reads the CHECK as two members before" \
+    "$("$WRIT" sql "$d/01-before.sql" 2>/dev/null)" "(type tickets-status (open closed))"
+  has "change-an-enum:    and three after" \
+    "$("$WRIT" sql "$d/02-add-value.sql" 2>/dev/null)" "(type tickets-status (open closed archived))"
+
+  ok_=$("$WRIT" check "$d/change-an-enum.writ" --claims "$d/change-an-enum.claims" 2>&1)
+  ost=$?
+  printf '%s\n' "$ok_" | sed 's/^/     | /'
+  exit_is "change-an-enum: the plan is clean" "$ost" 0
+  has "change-an-enum: A. a ticket can be archived" "$ok_" "holds  completes"
+  lacks "change-an-enum:    nothing is violated" "$ok_" "violated in"
+
+  sc=$("$WRIT" check "$d/change-an-enum-shortcut.writ" --claims "$d/change-an-enum.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "change-an-enum: archiving during the rollout is refused" "$sst" 1
+  has "change-an-enum: B. the first write of the value, while r1 still reads" "$sc" \
+    "violated in 1 reachable situations   witness: 1. add-value 2. deploy-r2 3. archive-t1"
+  # The database's own check is satisfied throughout: the value is allowed.
+  nviol=$(printf '%s\n' "$sc" | grep -c "violated in")
+  if [ "$nviol" = "1" ]; then
+    ok "change-an-enum: C. and only the rule the database cannot check breaks"
+  else
+    bad "change-an-enum: C. expected exactly one violated rule, got $nviol"
+  fi
+}
+
+split_a_table() {
+  d="$here/db-migration-problems/split-a-table"
+  echo "== Splitting a table — dual write, backfill, switch, contract =="
+  echo "   Q: when may reads switch to the new table?"
+  has "split-a-table: writ sql reads the new table's foreign key as an arrow" \
+    "$("$WRIT" sql "$d/02-create-addresses.sql" 2>/dev/null)" "(fk user-id users)"
+
+  ok_=$("$WRIT" check "$d/split-a-table.writ" --claims "$d/split-a-table.claims" 2>&1)
+  ost=$?
+  printf '%s\n' "$ok_" | sed 's/^/     | /'
+  exit_is "split-a-table: the plan is clean" "$ost" 0
+  has "split-a-table: A. the move can finish" "$ok_" "holds  completes"
+  lacks "split-a-table:    nothing is violated" "$ok_" "violated in"
+
+  sc=$("$WRIT" check "$d/split-a-table-shortcut.writ" --claims "$d/split-a-table.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "split-a-table: switching on a started backfill is refused" "$sst" 1
+  # The longest route to a fault in the collection: five steps, every one of
+  # them in the runbook's order.
+  has "split-a-table: B. reads switch to a half-filled table, five steps in" "$sc" \
+    "violated in 3 reachable situations   witness: 1. create-table 2. deploy-r2 3. settle 4. backfill-start 5. deploy-r3"
+  has "split-a-table:    and it is the completeness rule that breaks" "$sc" "equation complete-before-read"
+}
+
+add_a_foreign_key() {
+  d="$here/db-migration-problems/add-a-foreign-key"
+  echo "== Adding a foreign key, NOT VALID — the rows are spared, the code is not =="
+  echo "   Q: NOT VALID skips the old rows. Does it make adding the key safe?"
+  # writ sql reads the constraint and declines NOT VALID — the model would
+  # otherwise claim it for rows the database never checked — and declines
+  # VALIDATE CONSTRAINT. The model carries the validation state itself.
+  nv=$("$WRIT" sql "$d/02-add-not-valid.sql" --with-data --strict 2>&1)
+  nvst=$?
+  exit_is "add-a-foreign-key: writ sql declines NOT VALID under --strict" "$nvst" 1
+  has "add-a-foreign-key:    saying what it means" "$nv" "NOT VALID — the constraint is read, but rows already"
+  has "add-a-foreign-key:    and still reads the key as an arrow" "$nv" "(fk customer-id customers)"
+  vs=$("$WRIT" sql "$d/03-validate.sql" --with-data --strict 2>&1)
+  vst=$?
+  exit_is "add-a-foreign-key:    and declines VALIDATE CONSTRAINT" "$vst" 1
+  has "add-a-foreign-key:    saying why" "$vs" "VALIDATE CONSTRAINT — changes whether a constraint"
+
+  ok_=$("$WRIT" check "$d/add-a-foreign-key.writ" --claims "$d/add-a-foreign-key.claims" 2>&1)
+  ost=$?
+  printf '%s\n' "$ok_" | sed 's/^/     | /'
+  exit_is "add-a-foreign-key: the plan is clean" "$ost" 0
+  has "add-a-foreign-key: A. the constraint can end up validated" "$ok_" "holds  completes"
+  lacks "add-a-foreign-key:    nothing is violated" "$ok_" "violated in"
+
+  sc=$("$WRIT" check "$d/add-a-foreign-key-shortcut.writ" --claims "$d/add-a-foreign-key.claims" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "add-a-foreign-key: adding it mid-rollout is refused" "$sst" 1
+  has "add-a-foreign-key: B. two steps: the old code's deletes now fail" "$sc" \
+    "violated in 1 reachable situations   witness: 1. deploy-r2 2. add-not-valid"
+  has "add-a-foreign-key:    the every-writer rule, a third time" "$sc" "equation enforced-means-every-writer-complies"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best two_phase_commit arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best two_phase_commit arch timetable rename_a_column drop_a_column add_a_required_column change_an_enum split_a_table add_a_foreign_key separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment payments config_space on_call_rota control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

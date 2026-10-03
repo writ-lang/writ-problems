@@ -1,0 +1,102 @@
+; The same plan, with ONE CONDITION WEAKENED: reads switch to the new table
+; once the backfill has STARTED, not finished.
+;
+; `writ check` exits 1 on this file.
+
+(load "stdlib.writ")
+(load "split-a-table.lib.writ")
+
+(schema split-a-table
+
+  (type yn (no yes))
+
+  ; users.address, the column that is moving out.
+  (type column (arrow present (to yn)))
+
+  ; The new table. Whether it exists, and how much of it is filled: no, partly
+  ; (the backfill has started), or completely. Not a row count — the rules
+  ; only ever ask which of those three it is.
+  (type fill (no partial yes))
+  (type table
+    (arrow exists (to yn))
+    (arrow filled (to fill)))
+
+  ; What each release does, taken from its code. r1 is today's. r2 writes
+  ; both places and still reads the old one. r3 uses only the new table.
+  (type release
+    (arrow reads-old  (to yn) fixed)
+    (arrow reads-new  (to yn) fixed)
+    (arrow writes-new (to yn) fixed))
+
+  (type fleet
+    (arrow old (to release))
+    (arrow new (to release)))
+
+  ; ---- the rules ----
+
+  ; 1. Nobody reads a column that is gone.
+  (equation read-of-existing
+    (not (and (is column.present no)
+              (some (f fleet) (or (is f.old.reads-old yes) (is f.new.reads-old yes))))))
+
+  ; 2. Once the backfill has started, every running release writes the new
+  ; table too; otherwise its writes land after the copy and are never moved.
+  (equation no-lost-writes
+    (not (and (not (is table.filled no))
+              (some (f fleet) (or (is f.old.writes-new no) (is f.new.writes-new no))))))
+
+  ; 3. Nobody reads the new table before it holds every address. The one the
+  ; shortcut breaks: the reads succeed, and return nothing for the users the
+  ; backfill has not reached.
+  (equation complete-before-read
+    (not (and (not (is table.filled yes))
+              (some (f fleet) (or (is f.old.reads-new yes) (is f.new.reads-new yes)))))))
+
+(instance start split-a-table
+  (column address-col (present yes))
+  (table addresses (exists no) (filled no))
+  (release r1 (reads-old yes) (reads-new no)  (writes-new no))
+  (release r2 (reads-old yes) (reads-new no)  (writes-new yes))
+  (release r3 (reads-old no)  (reads-new yes) (writes-new yes))
+  (fleet prod (old r1) (new r1)))
+
+(use split-a-table)
+(initial start)
+
+; ---- the runbook ----
+
+; 02-create-addresses.sql.
+(transition create-table
+  (when (is addresses.exists no))
+  (do (set addresses.exists yes)))
+
+; Dual write.
+(transition deploy-r2
+  (when (and settled (is prod.new r1) (is addresses.exists yes)))
+  (do (set prod.new r2)))
+
+; Every rollout ends the same way.
+(transition settle
+  (when rolling)
+  (do (set prod.old prod.new)))
+
+; Copy the addresses that existed before the dual write. Only once nothing
+; still writes the old place alone.
+(transition backfill-start
+  (when (and (is addresses.filled no) settled (is prod.new r2)))
+  (do (set addresses.filled partial)))
+(transition backfill-finish
+  (when (is addresses.filled partial))
+  (do (set addresses.filled yes)))
+
+; Switch reads to the new table once the backfill is under way: it is "nearly
+; done", and r3 writes there too.
+(transition deploy-r3
+  (when (and settled (is prod.new r2) (not (is addresses.filled no))))   ; <- yes, weakened to "started"
+  (do (set prod.new r3)))
+
+; 03-drop-column.sql, once nothing reads it.
+(transition drop-column
+  (when (and (is address-col.present yes) settled (is prod.new r3)))
+  (do (set address-col.present no)))
+

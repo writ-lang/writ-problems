@@ -1,0 +1,22 @@
+; The same two questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `live F` is the COUNTEREXAMPLE set — EMPTY means it holds.
+(load "ct.rules")
+(load "on-call-rota.lib.writ")
+
+(satisfies rota-exists complete)
+(can-reach can-complete rota-exists)
+(trapped no-dead-end-prefix can-complete)
+
+; ---- the rotas, as rows ----
+; Every complete rota, one row per week: the situation that IS the rota, the
+; week, and its primary. A query cannot say this (its binders cannot be
+; compared, and a rota is a join); a rule can.
+(relation rota (Situation week person))
+(rule (rota S W P)
+  (rota-exists S)
+  (holds S (is W.primary P)))

@@ -1,0 +1,114 @@
+; An on-call rota: six weeks, four people, the policy as written.
+;
+; Every week needs a primary. Nobody does two weeks in a row, or more than two
+; weeks in the six, or a week they are on leave. Dan joined last month and may
+; not be primary until his second month, weeks 5 and 6.
+;
+; `writ check` exits 1 on this file. A rota exists, and its witness IS the
+; rota; but one first assignment leaves no way to finish. See the README.
+
+(load "stdlib.writ")
+(load "on-call-rota.lib.writ")
+
+(schema on-call-rota
+
+  (type yn (no yes))
+
+  ; How many weeks someone has taken so far. The policy caps it at two, so the
+  ; count is a three-step scale; the top step has no `up`, so a third week is
+  ; not refused but absent: there is no value to move to.
+  (type level (arrow up (to level) fixed vacatable))
+
+  ; Six weeks, filled in order. `next` is the ladder; the last week has none.
+  ; `late` marks the weeks a new joiner may take: their second month.
+  (type week
+    (arrow next (to week) fixed vacatable)
+    (arrow late (to yn) fixed)
+    (maybe primary person))
+
+  (type person
+    (arrow new   (to yn) fixed)
+    (arrow leave (to week) fixed vacatable)
+    (arrow back  (to week) fixed vacatable)   ; the week they return
+    (arrow load  (to level)))
+
+  ; Where the planner is: the week being filled, or `done`.
+  (type cursor (arrow at (to week) vacatable)))
+
+(instance start on-call-rota
+
+  (level l0 (up l1))
+  (level l1 (up l2))
+  (level l2 (up vacant))
+
+  (week w1 (next w2)     (late no)  (primary vacant))
+  (week w2 (next w3)     (late no)  (primary vacant))
+  (week w3 (next w4)     (late no)  (primary vacant))
+  (week w4 (next w5)     (late no)  (primary vacant))
+  (week w5 (next w6)     (late yes) (primary vacant))
+  (week w6 (next done)   (late yes) (primary vacant))
+  ; Past the last week. The cursor lands here when the rota is complete, and
+  ; no move fills it: its `next` is vacant, so an assignment to it is absent.
+  (week done (next vacant) (late no) (primary vacant))
+
+  (person ann (new no)  (leave vacant) (back vacant) (load l0))
+  (person bob (new no)  (leave w3)     (back w4)     (load l0))   ; away in week 3
+  (person cat (new no)  (leave w4)     (back w5)     (load l0))   ; away in week 4
+  (person dan (new yes) (leave vacant) (back vacant) (load l0))   ; joined last month
+
+  (cursor cur (at w1)))
+
+(use on-call-rota)
+(initial start)
+
+; ---- the policy ----
+;
+; Person P is primary for week W, whose previous week is PREV:
+;   - not on leave that week;
+;   - not primary the week before (nobody does two in a row);
+;   - a new joiner only in their second month;
+;   - at most two weeks in the six: carried by the load scale, whose `up`
+;     runs out after two.
+; Week 1 has no previous week; it passes itself as PREV, whose primary is
+; still empty when it is being filled.
+(form (assign N P W PREV)
+  (transition N
+    (when (and (is cur.at W)
+               (not (is P.leave W))
+               (not (is PREV.primary P))
+               (or (is P.new no) (is W.late yes))))
+    (do (set W.primary P) (set P.load P.load.up) (set cur.at W.next))))
+
+; The week before someone's leave. Whether the primary may hand over straight
+; into their own leave, with nobody back the next week to answer for what they
+; did, the policy does not say. So it is not a move but a question: a gap,
+; reported with its route, for whoever owns the policy to answer.
+(form (handover-into-leave N P W PREV)
+  (transition N
+    (when (and (is cur.at W) (not (is PREV.primary P))))
+    (do (gap "the policy does not say whether a primary may hand over straight into their own leave"))))
+
+(assign ann-takes-w1 ann w1 w1)
+(assign bob-takes-w1 bob w1 w1)
+(assign cat-takes-w1 cat w1 w1)
+(assign dan-takes-w1 dan w1 w1)
+(assign ann-takes-w2 ann w2 w1)
+(handover-into-leave bob-takes-w2 bob w2 w1)
+(assign cat-takes-w2 cat w2 w1)
+(assign dan-takes-w2 dan w2 w1)
+(assign ann-takes-w3 ann w3 w2)
+(assign bob-takes-w3 bob w3 w2)
+(handover-into-leave cat-takes-w3 cat w3 w2)
+(assign dan-takes-w3 dan w3 w2)
+(assign ann-takes-w4 ann w4 w3)
+(assign bob-takes-w4 bob w4 w3)
+(assign cat-takes-w4 cat w4 w3)
+(assign dan-takes-w4 dan w4 w3)
+(assign ann-takes-w5 ann w5 w4)
+(assign bob-takes-w5 bob w5 w4)
+(assign cat-takes-w5 cat w5 w4)
+(assign dan-takes-w5 dan w5 w4)
+(assign ann-takes-w6 ann w6 w5)
+(assign bob-takes-w6 bob w6 w5)
+(assign cat-takes-w6 cat w6 w5)
+(assign dan-takes-w6 dan w6 w5)

@@ -1,0 +1,13 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+(form settled (is prod.old prod.new))
+(form rolling (differ prod.old prod.new))
+
+; Where we are going: the fleet settled on r3, every address in the new table,
+; the old column gone. (Old and new are spelled out rather than `settled`,
+; which compares two paths and so cannot appear in a .rules guard.)
+(form done (and (is prod.old r3) (is prod.new r3)
+                (is addresses.filled yes)
+                (is address-col.present no)))

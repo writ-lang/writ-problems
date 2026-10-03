@@ -144,12 +144,13 @@ certified: every answer re-derived from the model (writ-cert)
 ```
 
 `n/a` means the question names something the model no longer has, so it was
-not answered. **`writ check` exits 0 on this file.** No property failed,
-because the one that would have was taken away. A harness that gates on that
-exit code has just been talked out of its question.
+not answered. No property failed, because the one that would have was taken
+away. That is why `writ check` treats an `n/a` as a finding and **exits 1** on
+this file: a gate that reads the exit status cannot be talked out of its
+question. (Earlier versions of writ exited 0 here. This scenario is how that
+was found.)
 
-So treat `n/a` as a failure, and gate on `compare` against the last version
-the human approved, which refuses it:
+`compare` against the last version the human approved says what was taken:
 
 ```sh
 writ compare agent-guardrails.writ attempt-forget-out.writ   # exit 1
@@ -166,7 +167,8 @@ properties:  useful                      preserved
 writ's MCP server already enforces both halves. It reads `.claims` from the
 human's directory whatever path the agent passes, and it reports what each
 edit lost, `n/a` included (see writ's `docs/mcp.md`). From the command line,
-`--json` carries `"verdict": "n/a"` for a script to refuse.
+`check` exits 1 on an `n/a`, and `--json` carries `"verdict": "n/a"` for a
+script that wants to say why.
 
 ## What to take away
 
@@ -185,7 +187,7 @@ give the secret the places it can come from, and write the policy as
 ```sh
 writ check agent-guardrails.writ --claims agent-guardrails.claims          # exit 0
 writ compare agent-guardrails.writ agent-guardrails-v2.writ                # exit 1
-writ check attempt-forget-out.writ --claims agent-guardrails.claims        # exit 0, and two n/a
+writ check attempt-forget-out.writ --claims agent-guardrails.claims        # exit 1: two n/a
 writ compare agent-guardrails.writ attempt-forget-out.writ                 # exit 1
 ```
 

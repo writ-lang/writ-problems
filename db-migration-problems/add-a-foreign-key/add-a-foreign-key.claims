@@ -1,0 +1,18 @@
+; The questions, put to both plans.
+
+(load "add-a-foreign-key.lib.writ")
+
+(property completes
+  "the constraint can end up validated, with no orphans and the fleet settled on r2"
+  (possible done))
+
+(property no-dead-ends
+  "from every reachable situation, that end can still be reached"
+  (live done))
+
+; ---- ownership ----
+(accept clean-orphans validated-means-no-orphans)
+(accept add-not-valid validated-means-no-orphans enforced-means-every-writer-complies)
+(accept validate      validated-means-no-orphans enforced-means-every-writer-complies)
+(accept deploy-r2     enforced-means-every-writer-complies)
+(accept settle        enforced-means-every-writer-complies)

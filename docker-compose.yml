@@ -93,6 +93,12 @@ services:
     image: writ-problems
     command: ["config_space"]
 
+  # An on-call rota: produced, the policy's gap found, and the rule that ends it.
+  on-call-rota:
+    build: .
+    image: writ-problems
+    command: ["on_call_rota"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:

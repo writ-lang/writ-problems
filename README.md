@@ -49,6 +49,7 @@ Many `writ check` runs **exit 1** on purpose: a failing property is a finding
 |---|---|---|
 | [`jobshop-possible/`](jobshop-possible/) | Can three jobs on three blocking machines all finish? | Yes — but three moves can deadlock the shop. |
 | [`jobshop-best/`](jobshop-best/) | What is the shortest schedule? | 5 ticks: `done-by-4` fails, `done-by-5` holds. |
+| [`on-call-rota/`](on-call-rota/) | Does a valid on-call rota exist, and what does the policy not say? | Ten exist, and writ prints one. Add one kind rule and none does, unless a question the policy never answered is answered yes. |
 | [`entitlement-problems/`](entitlement-problems/) | Can a requester approve, a developer edit CloudTrail, a leaver keep admin? | Yes, each through steps that are fine one at a time. writ names who, and through which grants. |
 | [`expense-approval/`](expense-approval/) | Can a large expense be paid without two independent approvals? | Yes, when one person holds both roles: "two signatures" counted boxes, not people. |
 | [`agent-guardrails/`](agent-guardrails/) | Can an AI agent's secret leave the machine with no human saying yes? | Not under v1. Add a "read-only" web-fetch and it can, in three moves, none of them human's. |
