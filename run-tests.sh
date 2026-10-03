@@ -431,17 +431,18 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The seventeen scenarios this script walks by convention, and their 45
+  # The eighteen scenarios this script walks by convention, and their 49
   # properties. `calculation/` and `gotha/` are not among them: each carries its
   # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the seventeen fails this line, which is the point of it —
+  # property to any of the eighteen fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
-  # entitlement-problems (3 + 3 + 4), and 41 -> 45 with expense-approval, and
-  # this line is where each of those had to be said out loud.
-  has "cross-check: all 45 properties of the seventeen scenarios were considered" \
-    "$out" "considered 45 properties: 43 compared, 2 not compared"
-  # Two of the 45 are not compared, and the count above is the only place that
+  # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
+  # 45 -> 49 with agent-guardrails, and this line is where each of those had to
+  # be said out loud.
+  has "cross-check: all 49 properties of the eighteen scenarios were considered" \
+    "$out" "considered 49 properties: 47 compared, 2 not compared"
+  # Two of the 49 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -458,9 +459,9 @@ crosscheck() {
   # measured. If it ever reads "unexercised" again, a scenario went missing.
   # two-phase-commit's atomicity is the third; the entitlement problems bring
   # four more, since "nobody ever holds X" is how an access rule is said, and
-  # expense-approval one.
+  # expense-approval and agent-guardrails one each.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 8 properties compared"
+    "never: 9 properties compared"
   # And `inevitable`, two of whose three are two-phase-commit's — the newest
   # modality, and the one whose second implementation is newest, so the line
   # that says it is being compared at all is worth having. The third is
@@ -720,9 +721,66 @@ expense_approval() {
   has "expense-approval: G. derive lists who signed each payment" "$dv" "13  bob  bob"
 }
 
+agent_guardrails() {
+  d="$here/agent-guardrails"
+  c="$d/agent-guardrails.claims"
+  echo "== An AI agent's tool policy — and the read-only tool that leaks =="
+  echo "   Q: can a secret leave the machine with no human saying yes?"
+  out=$("$WRIT" check "$d/agent-guardrails.writ" --claims "$c" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  exit_is "agent-guardrails: policy v1 is clean" "$st" 0
+  has "agent-guardrails: A. the agent can work on its own" "$out" "holds  useful"
+  has "agent-guardrails: B. no secret leaves unasked" "$out" "holds  no-unapproved-exfiltration"
+  has "agent-guardrails:    and the human can always interrupt" "$out" "holds  human-can-interrupt"
+
+  cmp=$("$WRIT" compare "$d/agent-guardrails.writ" "$d/agent-guardrails-v2.writ" 2>&1)
+  cst=$?
+  printf '%s\n' "$cmp" | sed 's/^/     | /'
+  exit_is "agent-guardrails: compare refuses v2" "$cst" 1
+  has "agent-guardrails: C. adding a read-only tool loses the guarantee, in three moves" "$cmp" \
+    "no-unapproved-exfiltration  LOST      witness: 1. switch-to-auto 2. read-secret-with-file-read 3. send-secret-with-web-fetch"
+  # The headline: the route contains no human move. Asserted on the route
+  # line itself, since every human move's name starts with `human-`.
+  route=$(printf '%s\n' "$cmp" | grep "no-unapproved-exfiltration  LOST")
+  lacks "agent-guardrails:    and no human move is on the route" "$route" "human-"
+  has "agent-guardrails:    while the agent stays exactly as useful" "$cmp" "useful                      preserved"
+
+  v2=$("$WRIT" check "$d/agent-guardrails-v2.writ" --claims "$c" 2>&1)
+  near "agent-guardrails: D. the verdict names the tool" "$v2" "carrier  (at state 6)" "t = web-fetch"
+  has "agent-guardrails:    and the new move is one the human never acknowledged" "$v2" \
+    "unadmitted  send-secret-with-web-fetch may break no-silent-exfiltration"
+
+  # The loop: an agent asked to make v2 pass, the claims file held fixed.
+  fx=$("$WRIT" check "$d/attempt-fetch-asks.writ" --claims "$c" 2>&1)
+  fst=$?
+  exit_is "agent-guardrails: E. the honest fix still awaits the human" "$fst" 1
+  has "agent-guardrails:    every question holds" "$fx" "holds  no-unapproved-exfiltration"
+  has "agent-guardrails:    but its new approval path is the human's to acknowledge" "$fx" \
+    "unadmitted  human-approves-web-fetch may break no-silent-exfiltration"
+  fc=$("$WRIT" compare "$d/agent-guardrails.writ" "$d/attempt-fetch-asks.writ" 2>&1)
+  fcst=$?
+  exit_is "agent-guardrails:    and compare against v1 accepts it" "$fcst" 0
+
+  ch=$("$WRIT" check "$d/attempt-forget-out.writ" --claims "$c" 2>&1)
+  chst=$?
+  # The cheat: delete what the question reads. `check` answers n/a and EXITS 0
+  # — asserted as it is, since a harness that gates on this exit code is the
+  # failure the README warns about.
+  has "agent-guardrails: F. deleting the record makes the question n/a" "$ch" "n/a  no-unapproved-exfiltration"
+  exit_is "agent-guardrails:    and check alone exits clean" "$chst" 0
+  cc=$("$WRIT" compare "$d/agent-guardrails.writ" "$d/attempt-forget-out.writ" 2>&1)
+  ccst=$?
+  exit_is "agent-guardrails: G. compare against v1 refuses it" "$ccst" 1
+  has "agent-guardrails:    naming the question it took away" "$cc" "no-unapproved-exfiltration  LOST"
+
+  dv=$("$WRIT" derive "$d/agent-guardrails-v2.writ" "$d/agent-guardrails.rules" exfil-path 2>&1)
+  has "agent-guardrails: H. derive lists the tool and the mode" "$dv" "6  web-fetch  auto"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

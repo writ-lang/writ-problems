@@ -1,0 +1,28 @@
+; The human's questions. An agent asked to fix the policy may edit the model;
+; it may not edit this file. See the README.
+
+(load "agent-guardrails.lib.writ")
+
+(property useful
+  "the agent can work on its own with what it has read"
+  (possible (and (is s.mode auto) (is api-key.in-context yes))))
+
+(property human-can-release
+  "a human can still choose to send the secret"
+  (possible (is api-key.out approved)))
+
+(property no-unapproved-exfiltration
+  "a secret never leaves without a human saying yes"
+  (never silently-out)
+  (show carrier))
+
+(property human-can-interrupt
+  "from every situation, the human can still get back to ask mode"
+  (live (is s.mode ask)))
+
+; ---- through what ----
+(query carrier (where (t tool)) (is t.carried-secret yes))
+
+; ---- ownership ----
+; Every move that writes where the secret is can break the rule.
+(accept human-approves-shell no-silent-exfiltration)

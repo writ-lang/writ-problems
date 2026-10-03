@@ -83,6 +83,12 @@ services:
     image: writ-problems
     command: ["expense_approval"]
 
+  # An AI agent's tool policy: the read-only tool that carries a secret out.
+  agent-guardrails:
+    build: .
+    image: writ-problems
+    command: ["agent_guardrails"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:
