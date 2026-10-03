@@ -1,0 +1,115 @@
+; The same deploy with ONE CONDITION REMOVED from each replacement: it no
+; longer waits for the rest of the fleet to be serving. A surge, "to make the
+; deploy faster".
+;
+; `writ check` exits 1 on this file, for two reasons: the rollback, as in the
+; original, and production going dark.
+
+(load "stdlib.writ")
+(load "deployment.lib.writ")
+
+(schema deployment
+
+  (type release (r1 r2))
+  (type version (v1 v2))
+  (type yn (no yes))
+
+  ; An instance serves traffic only when healthy. A replaced one is starting
+  ; until its health check passes; a crashed one is down.
+  (type state-t (starting healthy down))
+  (type instance
+    (arrow at    (to release))
+    (arrow state (to state-t)))
+
+  ; The release the rollout is heading for.
+  (type fleet (arrow target (to release)))
+
+  ; The schema, and whether the migration to v2 has run. It drops the column
+  ; r1 reads, so it has no inverse.
+  (type database (arrow at (to version)))
+
+  ; ---- the rules ----
+
+  ; A serving instance can read the schema it runs against: no r1 serving once
+  ; the schema is v2. (A law has one subject, the instance; the database is
+  ; bound with `some`.)
+  (equation no-mismatch
+    (not (and (is instance.state healthy)
+              (is instance.at r1)
+              (some (d database) (is d.at v2))))))
+
+(instance start deployment
+  (instance a (at r1) (state healthy))
+  (instance b (at r1) (state healthy))
+  (instance c (at r1) (state healthy))
+  (fleet prod (target r1))
+  (database db (at v1)))
+
+(use deployment)
+(initial start)
+
+; ---- the release ----
+
+(transition target-r2
+  (when (is prod.target r1))
+  (do (set prod.target r2)))
+
+; The rollback in the runbook: head back to r1. Only while the schema is still
+; one r1 can read.
+(transition roll-back-target
+  (when (and (is prod.target r2) (is db.at v1)))
+  (do (set prod.target r1)))
+
+; The migration, once the rollout is finished: every instance on r2 and
+; serving, AND the release still heading for r2. One way.
+;
+; The last condition is the one the first draft of this file lacked, and writ
+; found it: finish the rollout, decide to roll back, and the migration — whose
+; guard looked only at the instances — runs anyway. The rollback then starts r1
+; against v2, where it never passes a health check. See the README.
+(transition migrate
+  (when (and (is db.at v1) (is prod.target r2) (all-at-healthy r2)))
+  (do (set db.at v2)))
+
+; ---- the rollout ----
+
+; Replace instance I (running FROM) with the target release TO, as soon as
+; it is on the old one. J and K are still passed in; nothing reads them.
+(form (roll N I J K FROM TO)
+  (transition N
+    (when (and (is prod.target TO) (is I.at FROM)))   ; <- the health gate, gone
+    (do (set I.at TO) (set I.state starting))))
+
+(form (pass-health N I)
+  (transition N
+    (when (and (is I.state starting) (compatible I)))
+    (do (set I.state healthy))))
+
+; The environment. One instance fails at a time: a crash is only possible
+; while the other two are serving. This is the fault model, and the README
+; says why it is the honest one for the question.
+(form (crash N I J K)
+  (transition N
+    (when (and (is I.state healthy) (is J.state healthy) (is K.state healthy)))
+    (do (set I.state down))))
+(form (restart N I)
+  (transition N
+    (when (and (is I.state down) (compatible I)))
+    (do (set I.state healthy))))
+
+(roll replace-a-with-r2 a b c r1 r2)
+(roll replace-b-with-r2 b a c r1 r2)
+(roll replace-c-with-r2 c a b r1 r2)
+(roll replace-a-with-r1 a b c r2 r1)
+(roll replace-b-with-r1 b a c r2 r1)
+(roll replace-c-with-r1 c a b r2 r1)
+(pass-health a-passes-health a)
+(pass-health b-passes-health b)
+(pass-health c-passes-health c)
+(crash a-crashes a b c)
+(crash b-crashes b a c)
+(crash c-crashes c a b)
+(restart a-restarts a)
+(restart b-restarts b)
+(restart c-restarts c)
+

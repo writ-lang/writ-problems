@@ -431,18 +431,18 @@ crosscheck() {
   st=$?
   printf '%s\n' "$out" | sed 's/^/     | /'
   exit_is "cross-check: the two implementations agree everywhere" "$st" 0
-  # The eighteen scenarios this script walks by convention, and their 49
+  # The nineteen scenarios this script walks by convention, and their 52
   # properties. `calculation/` and `gotha/` are not among them: each carries its
   # own explicit cross-check.sh, run from its own test function above. Adding a
-  # property to any of the eighteen fails this line, which is the point of it —
+  # property to any of the nineteen fails this line, which is the point of it —
   # the count went 20 -> 22 -> 26 as the three db-migration-problems joined,
   # 26 -> 31 with two-phase-commit, 31 -> 41 with the three
   # entitlement-problems (3 + 3 + 4), 41 -> 45 with expense-approval, and
-  # 45 -> 49 with agent-guardrails, and this line is where each of those had to
-  # be said out loud.
-  has "cross-check: all 49 properties of the eighteen scenarios were considered" \
-    "$out" "considered 49 properties: 47 compared, 2 not compared"
-  # Two of the 49 are not compared, and the count above is the only place that
+  # 45 -> 49 with agent-guardrails, 49 -> 52 with deployment, and this line is
+  # where each of those had to be said out loud.
+  has "cross-check: all 52 properties of the nineteen scenarios were considered" \
+    "$out" "considered 52 properties: 50 compared, 2 not compared"
+  # Two of the 52 are not compared, and the count above is the only place that
   # would notice if the reason changed: two-phase-commit and expense-approval
   # each ask one property under a fairness assumption, which ct.rules §8 does
   # not encode.
@@ -459,9 +459,9 @@ crosscheck() {
   # measured. If it ever reads "unexercised" again, a scenario went missing.
   # two-phase-commit's atomicity is the third; the entitlement problems bring
   # four more, since "nobody ever holds X" is how an access rule is said, and
-  # expense-approval and agent-guardrails one each.
+  # expense-approval, agent-guardrails and deployment one each.
   has "cross-check: C. the never branch is exercised" "$out" \
-    "never: 9 properties compared"
+    "never: 10 properties compared"
   # And `inevitable`, two of whose three are two-phase-commit's — the newest
   # modality, and the one whose second implementation is newest, so the line
   # that says it is being compared at all is worth having. The third is
@@ -778,9 +778,41 @@ agent_guardrails() {
   has "agent-guardrails: H. derive lists the tool and the mode" "$dv" "6  web-fetch  auto"
 }
 
+deployment() {
+  d="$here/deployment"
+  c="$d/deployment.claims"
+  echo "== A rolling deploy — and the rollback that is not always there =="
+  echo "   Q: is production ever dark, and can the fleet always roll back?"
+  out=$("$WRIT" check "$d/deployment.writ" --claims "$c" 2>&1)
+  st=$?
+  printf '%s\n' "$out" | sed 's/^/     | /'
+  # Exit 1 on the SAFE plan, and that is the finding: the rollout is fine, the
+  # rollback is a promise one lawful move breaks.
+  exit_is "deployment: even the gated rollout reports a finding" "$st" 1
+  has "deployment: A. the release can finish" "$out" "holds  upgrades"
+  has "deployment: B. production is never dark" "$out" "holds  never-dark"
+  has "deployment: C. but rollback is not always possible" "$out" "fails  can-roll-back"
+  has "deployment:    stuck once the schema is v2" "$out" "prod.target=r2 db.at=v2)"
+  has "deployment:    and the last step there is the migration" "$out" "8. migrate"
+  lacks "deployment:    no law is broken on the way" "$out" "violated in"
+
+  sc=$("$WRIT" check "$d/deployment-shortcut.writ" --claims "$c" 2>&1)
+  sst=$?
+  printf '%s\n' "$sc" | sed 's/^/     | /'
+  exit_is "deployment: the ungated rollout is refused" "$sst" 1
+  has "deployment: D. without the health gate, production goes dark" "$sc" "fails  never-dark"
+  near "deployment:    three replacements, no health check between" "$sc" "fails  never-dark" "4. replace-c-with-r2"
+
+  # Asked with no goal in mind: which moves can never be taken back? The
+  # migration, and nothing else — a rollout move here would be a latch.
+  dv=$("$WRIT" derive "$d/deployment.writ" "$d/deployment.rules" irreversible 2>&1)
+  has "deployment: E. exactly one decision cannot be taken back" "$dv" "irreversible  (1 row)"
+  has "deployment:    the migration" "$dv" "  migrate"
+}
+
 # The scenarios, in order — the single source of truth for `all`, numbering
 # (1-based, as `list` prints), and name lookup. Each is a function above.
-scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails control gitcompare crosscheck"
+scenarios="river island queens jobshop_possible jobshop_best oversight workflow two_phase_commit access calculation gotha arch timetable rename_a_column drop_a_column add_a_required_column separation_of_duties scp_escalation joiner_mover_leaver expense_approval agent_guardrails deployment control gitcompare crosscheck"
 
 list_scenarios() {
   echo "tests (run one by name or number, e.g. '$0 3' or '$0 river'):"

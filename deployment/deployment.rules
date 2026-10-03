@@ -1,0 +1,25 @@
+; The same three questions, answered a second time by a different part of
+; `writ`, so that `modality-cross-check.sh` can compare them. A disagreement is
+; a bug in one of them, not a number to adjust.
+;
+; POLARITY:
+;   `possible F` is the SATISFYING set — non-empty means it holds.
+;   `never F` and `live F` are COUNTEREXAMPLE sets — EMPTY means it holds.
+(load "ct.rules")
+(load "deployment.lib.writ")
+
+(satisfies upgrades (and (all-at-healthy r2) (is db.at v2)))
+
+(satisfies never-dark none-healthy)
+
+(satisfies on-r1 (all-at-healthy r1))
+(can-reach can-get-to-r1 on-r1)
+(trapped can-roll-back can-get-to-r1)
+
+; ---- which decisions cannot be taken back ----
+; `one-way` (ct.rules §4) is every edge that leaves its strongly connected
+; component: a move after which the situation it left can never be reached
+; again. Asked with no goal in mind. Projected onto the move's name, which is
+; the column that answers "which step was that".
+(relation irreversible (Edge))
+(rule (irreversible E) (one-way E S T))

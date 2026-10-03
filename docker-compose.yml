@@ -89,6 +89,12 @@ services:
     image: writ-problems
     command: ["agent_guardrails"]
 
+  # A rolling deploy: the health gate, and the rollback a migration removes.
+  deployment:
+    build: .
+    image: writ-problems
+    command: ["deployment"]
+
   # A timetable CP-SAT decided, audited: one state, two broken school rules,
   # two questions the curriculum never answered.
   timetable:

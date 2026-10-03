@@ -1,0 +1,16 @@
+; Shared by the models and the questions, because a questions file has its own
+; form scope and there is no implicit prelude.
+(load "stdlib.writ")
+
+; Can instance I's release work against the schema as it is now? r1 knows only
+; v1. r2 was written for the migration: it reads v1 and v2 alike.
+(form (compatible I)
+  (or (and (is I.at r1) (is db.at v1))
+      (is I.at r2)))
+
+(form none-healthy
+  (and (not (is a.state healthy)) (not (is b.state healthy)) (not (is c.state healthy))))
+
+(form (all-at-healthy R)
+  (and (is a.at R) (is b.at R) (is c.at R)
+       (is a.state healthy) (is b.state healthy) (is c.state healthy)))
